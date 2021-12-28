@@ -89,8 +89,9 @@ import { get } from "svelte/store";
 
     gamePlayers.subscribe(newGamePlayers => {
         console.log('got new game players in <Lobby /> ', newGamePlayers)
+        let adminId = get(currentGame).admin.user_id
         for(let gamePlayer in newGamePlayers){
-            if(newGamePlayers[gamePlayer].user_id === get(currentGame).admin.user_id){
+            if(newGamePlayers[gamePlayer].user_id === adminId && adminId !== ""){
                 adminRole = {
                     role: gamePlayer,
                     user_id: newGamePlayers[gamePlayer].user_id,
