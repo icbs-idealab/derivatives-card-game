@@ -3,7 +3,7 @@ import { get } from "svelte/store"
 import { allRoleNames, defaultGame, defaultUser } from "./constants"
 import { buildShuffledDeck, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements } from "./state"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby } from "./state"
 import type { AppGamePlayers, NewGameProps, SupabaseUser } from "./types"
 import {nanoid} from 'nanoid'
 import { page } from "$app/stores"
@@ -114,7 +114,7 @@ export const getPlayerData = async (game_id: string) => {
 
     console.log('player data: ', data)
 
-    return {data: data ? data[0] : data, error, success: !error}
+    return {data, error, success: !error}
 }
 
 export const watchPlayers = async (game_id: string) => {
@@ -144,7 +144,7 @@ export const getAndWatchPlayers = async (game_id: string) => {
         let players = await getPlayerData(game_id)
         
         if(players.data && typeof Array.isArray(players.data)) {
-            syncGamePlayers(players)
+            syncGamePlayers(players.data)
             lobbyRequirements.update(original => {
                 return {
                     ...original,
@@ -159,28 +159,33 @@ export const getAndWatchPlayers = async (game_id: string) => {
 }
 
 export function syncGamePlayers(update){
+    console.log('syncing players with update value: ', update)
     gamePlayers.update(currentPlayers => {
         // players.data
-        let newPlayers = [...currentPlayers]
+        // players.data
+        console.log('current players: ', currentPlayers)
+
+        let newPlayers = {...currentPlayers}
         
         if(Array.isArray(update)){
 
             update.map(player => {
-                let index = newPlayers.findIndex(oldPlayer => oldPlayer.role === player.role)
-                newPlayers[index] = {
-                    ...newPlayers[index],
+                newPlayers[player.role] = {
+                    ...newPlayers[player.role],
                     ...player
                 }
             })
 
         }
         else{
-            let index = newPlayers.findIndex(oldPlayer => oldPlayer.role === update.role)
-            newPlayers[index] = {
-                ...newPlayers[index],
+            // let index = newPlayers.findIndex(oldPlayer => oldPlayer.role === update.role)
+            newPlayers[update.role] = {
+                ...newPlayers[update.role],
                 ...update
             }
         }
+
+        console.log('data before syncing players: ', newPlayers)
     
         return newPlayers    
     })
@@ -226,30 +231,29 @@ export const getAndWatchLobby = async (game_id: string) => {
 }
 
 export function syncLobby(update){
-    gamePlayers.update(currentPlayers => {
+    lobby.update(currentLobbyPlayers => {
         // players.data
-        let newPlayers = [...currentPlayers]
+        console.log('current lobby players: ', currentLobbyPlayers)
+
+        let currentPlayers = [...currentLobbyPlayers]
         
         if(Array.isArray(update)){
-
             update.map(player => {
-                let index = newPlayers.findIndex(oldPlayer => oldPlayer.role === player.role)
-                newPlayers[index] = {
-                    ...newPlayers[index],
-                    ...player
+                let index = currentPlayers.findIndex(currentPlayer => currentPlayer.user_id === player.user_id)
+                if(index > -1){
+                    // player already exists
+                }
+                else{
+                    currentPlayers.push({...player})
                 }
             })
-
         }
         else{
-            let index = newPlayers.findIndex(oldPlayer => oldPlayer.role === update.role)
-            newPlayers[index] = {
-                ...newPlayers[index],
-                ...update
-            }
+            let index = currentPlayers.findIndex(currentPlayer => currentPlayer.user_id === update.user_id)
+            index !== -1 && currentPlayers.push({...update})
         }
     
-        return newPlayers    
+        return currentPlayers    
     })
 }
 
@@ -308,7 +312,7 @@ export async function joinLobby(game_id, player){
 // GAME
 
 export const createNewGame = async ({user, creatorRole, maximumSpread, playerName}: NewGameProps) => {
-    setLoadingModal({value: true})
+    setLoadingModal(true)
 
     // create new game
     const game_id = nanoid(12)
@@ -430,7 +434,7 @@ const viewCreatedGame = async (creationResults: any[]) => {
     let game = creationResults.filter(cr => cr.type === 'game')[0].data
     console.log('game: ', game)
     if(game){
-        currentGame.set(game)
+        currentGame.set(parseGameData(game))
         if(!get(serverSubscriptions).game){
             await watchGame(game.game_id)
         }
@@ -468,7 +472,7 @@ export async function watchGame(game_id){
             .on('*', (payload) => {
                 // update game object in app state
                 console.log('got game update: ', payload)
-                currentGame.set(payload.new)
+                currentGame.set(parseGameData(payload.new))
             })
             .subscribe()
         
@@ -480,14 +484,21 @@ export async function watchGame(game_id){
 export async function getAndWatchGame(game_id){
     let game = await getGame(game_id)
     if(game && !get(serverSubscriptions).game){
-        currentGame.set(game)
+        currentGame.set(parseGameData(game))
         await watchGame(game_id)
     }
     return game
 }
 
+function parseGameData(data){
+    return {
+        ...data,
+        admin: JSON.parse(data.admin)
+    }
+}
+
 export async function leaveGame(){
-    setLoadingModal({value: true})
+    setLoadingModal(true)
     await supabase.auth.update({
         data: {
             game_id: '',
@@ -496,7 +507,7 @@ export async function leaveGame(){
         }
     })
 
-    setLoadingModal({value: false})
+    setLoadingModal(false)
 
     setTimeout(() => {
         redirect("/")
@@ -507,6 +518,7 @@ export async function leaveGame(){
 // UI
 
 export const setLoadingModal = (newState) => {
+    console.log('setting loading modal')
     showLoadingModal.set(newState)
 }
 

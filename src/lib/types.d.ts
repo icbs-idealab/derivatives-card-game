@@ -131,7 +131,7 @@ export interface AppGamePlayer {
     role: string // for ref/convenience only, otherwise derived from column
     buy: number
     sell: number
-    
+    game_id: string
 }
 
 export interface AppLobbyPlayer extends AppGamePlayer {

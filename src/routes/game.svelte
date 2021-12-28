@@ -26,15 +26,33 @@
             <h1>{$currentGame.game_id}</h1>
         </div>
     {:else}
-        <div class="">
-            <div class="is-loading"></div>
-            <p>waiting for game data</p>
-            <p>exists: {exists}</p>
-            <p>game id: {$currentGame.game_id}</p>
-            <p>Playable: {playable}</p>
-            <p>In Lobby: {inLobby}</p>
-        </div>
-        <!-- <Lobby /> -->
+        <ul class="lobby-details">
+            <li>waiting for game data</li>
+            <li>exists: {exists}</li>
+            <li>game id: {$currentGame.game_id}</li>
+            <li>Playable: {playable}</li>
+            <li>In Lobby: {inLobby}</li>
+        </ul>
+        <Lobby />
     {/if}
     <!-- else -->
 </div>
+
+<style>
+    .lobby-details {
+        display: grid;
+        grid-auto-columns: auto;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        position: fixed;
+        top: 125px;
+        left: 45px;
+    }
+    
+    li {
+        font-size: 0.8em;
+    }
+
+</style>

@@ -73,6 +73,7 @@ export const emptyReveals = {
 
 export const defaultGamePlayer: AppGamePlayer = {
     user_id: '',
+    game_id: '',
     player_name: '',
     hand: {...emptyHand},
     revealed: {...emptyReveals},

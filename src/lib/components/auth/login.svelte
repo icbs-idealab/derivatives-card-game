@@ -25,7 +25,7 @@
     async function submit(){
         if(onSubmit && typeof onSubmit === 'function'){
             
-            setLoadingModal({value: true})
+            setLoadingModal(true)
 
             console.log('submitting in login.svelte')
             
@@ -40,13 +40,13 @@
                 }]
                 // store reference to error in app state
                 appErrors.set([ers])
-                setLoadingModal({value: false})
+                setLoadingModal(false)
             }
             else if(signedIn && signedIn.user){
                 // store new user
                 console.log('should store new user')
                 updateActiveUser(signedIn.user)
-                setLoadingModal({value: false})
+                setLoadingModal(false)
             }
         }
     }

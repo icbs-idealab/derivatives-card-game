@@ -3,12 +3,13 @@
     import { getAndWatchLobby, getAndWatchPlayers } from "$lib/actions";
     // import Players from "$lib/game/players.svelte";
     // import { roleKeys } from "$lib/../constants";
-    import { currentUser, gamePlayers, lobby, lobbyRequirements } from "$lib/state";
+    import { currentUser, gamePlayers, lobby, lobbyRequirements, currentGame } from "$lib/state";
     // import { lobbyRequirements } from "$lib/../state/lobby";
     import SuitIcon from "$lib/components/suit/suit-icon.svelte";
     import { setLoadingModal } from "$lib/actions";
     import { roleKeys } from "$lib/constants";
     import { makeGamePlayers } from "$lib/helpers";
+import { get } from "svelte/store";
 
     let defaultGamePlayers = makeGamePlayers()
     let localLobby = []
@@ -75,7 +76,7 @@
         if(lobbyReq.gamePlayers && lobbyReq.lobbyPlayers){
             // can now properly render player selection list
             listReady = true
-            setLoadingModal({value: false})
+            setLoadingModal(false)
         }
     })
 
@@ -86,23 +87,35 @@
         game_id: "",
     }
 
-    // gamePlayers.subscribe(newGamePlayers => {
+    gamePlayers.subscribe(newGamePlayers => {
+        console.log('got new game players in <Lobby /> ', newGamePlayers)
+        for(let gamePlayer in newGamePlayers){
+            if(newGamePlayers[gamePlayer].user_id === get(currentGame).admin.user_id){
+                adminRole = {
+                    role: gamePlayer,
+                    user_id: newGamePlayers[gamePlayer].user_id,
+                    player_name: newGamePlayers[gamePlayer].player_name,
+                    game_id: newGamePlayers[gamePlayer].game_id
+                }
 
-    //     roleKeys.map(rk => {
-    //         if(newGamePlayers[rk].user_id){
-    //             // will alayws be admin
-    //             adminRole = {
-    //                 role: rk,
-    //                 user_id: newGamePlayers[rk].user_id,
-    //                 player_name: newGamePlayers[rk].player_name,
-    //                 game_id: newGamePlayers.game_id
-    //             }
+                selectedRoles[gamePlayer] = {...adminRole}
+            }
+        }
+        // newGamePlayers.map(player => {
+        //     if(player.user_id){
+        //         // will alayws be admin
+        //         adminRole = {
+        //             role: player.role,
+        //             user_id: player.user_id,
+        //             player_name: player.player_name,
+        //             game_id: player.game_id
+        //         }
 
-    //             selectedRoles[rk] = {...adminRole}
-    //         }
-    //     })
+        //         selectedRoles[player.role] = {...adminRole}
+        //     }
+        // })
 
-    // })
+    })
 </script>
 
 <div class="lobby flex fd-col">
@@ -132,7 +145,7 @@
     <div class="details flex jc-between ai-start">
         <div class="detail-group left">
             <p class="detail-label">Instructions</p>
-            <p class="detail-value">Assign players a role from the drop-down menu.</p>
+            <p class="detail-value">Assign 4 players a role using the selectors below.</p>
         </div>
         <div class="detail-group right">
             <p class="detail-label">Game ID</p>
@@ -197,8 +210,8 @@
 
 <style>
     .lobby {
-        height: 100vh;
-        width: 100vw;
+        height: 100%;
+        width: 100%;
         padding: 15vw;
     }
 
