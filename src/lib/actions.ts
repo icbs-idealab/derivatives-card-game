@@ -446,6 +446,40 @@ const viewCreatedGame = async (creationResults: any[]) => {
     }
 }
 
+export const assignGamePlayers = async (game_id, roleAssignments) => {
+    // assign player roles
+    return Promise.all(
+        roleAssignments.map(async (player) => {
+            // try {
+                // results[player.role] = await supabase
+                return await supabase
+                    .from('game-players')
+                    .update({
+                        player_name: player.player_name,
+                        user_id: player.user_id,
+                    })
+                    .select("*")
+                    .eq('game_id', game_id)
+                    .eq('role', player.role)
+            // }
+            // catch(err){
+            //     console.log(`error assigning player ${player.role}: `, err)
+            // }
+        })
+    )
+    .then(res => {
+        console.log('successfully assigned all game roles: ', res)
+        return res
+    })
+    .catch(err => {
+        console.log('error assigning players before game start: ', err)
+    })
+}
+
+export const startGame = async (game_id, roleAssignments) => {
+    // assign player roles
+}
+
 export async function getGame(game_id){
     let {data, error} = await supabase.from('games')
         .select('*')

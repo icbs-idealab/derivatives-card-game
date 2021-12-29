@@ -1,22 +1,24 @@
 <script lang="ts">
     import LobbyPlayerSelector from "$lib/components/game/lobby-player-selector.svelte";
-    import { getAndWatchLobby, getAndWatchPlayers } from "$lib/actions";
+    import { assignGamePlayers, getAndWatchLobby, getAndWatchPlayers, startGame } from "$lib/actions";
     // import Players from "$lib/game/players.svelte";
     // import { roleKeys } from "$lib/../constants";
     import { currentUser, gamePlayers, lobby, lobbyRequirements, currentGame } from "$lib/state";
     // import { lobbyRequirements } from "$lib/../state/lobby";
     import SuitIcon from "$lib/components/suit/suit-icon.svelte";
     import { setLoadingModal } from "$lib/actions";
-    import { roleKeys } from "$lib/constants";
+    import { allRoleNames, roleKeys } from "$lib/constants";
     import { makeGamePlayers } from "$lib/helpers";
     import { get } from "svelte/store";
     import Icon from "../icon/icon.svelte";
 
+    export let haveRequiredRoles: boolean = false;
     let defaultGamePlayers = makeGamePlayers()
     let localLobby = []
     let localGamePlayers = $gamePlayers
     let localUser = $currentUser
     $:isAdmin = localUser.user_metadata && localUser.user_metadata.admin
+
 
     // filtered list of players that should be included in the player selection list
     let selectedRoles = {
@@ -30,6 +32,8 @@
         && selectedRoles.diamonds
         && selectedRoles.hearts
         && selectedRoles.spades
+
+    // $:allAssigned = $gam
 
     $:filtered = localLobby.filter(l => {
         return JSON.stringify($gamePlayers).indexOf(l.user_id) === -1
@@ -106,6 +110,62 @@
             }
         }
     })
+
+    function submit(){
+        setLoadingModal(true)
+        // create object representing player role assignments
+        let assingments = {...localGamePlayers}
+        let assignedPlayers: string[] = []
+        let pool = Array.from(localLobby)
+
+        for(let role in selectedRoles){
+            // selectedRoles[role]
+            let currentRoleAssignment = assingments[role].user_id
+
+            if(!currentRoleAssignment){
+                assingments[role].user_id = selectedRoles[role].user_id
+                assingments[role].player_name = selectedRoles[role].player_name
+                let indexInPool = pool.findIndex(player => player.user_id === selectedRoles[role].user_id)
+                pool.splice(indexInPool, 1)
+            }
+        }
+
+        for(let i = 0; i<6; i++){
+            // speculators cannot have assignments. no need to check for matching role
+            if(pool.length){
+                console.log('setting speculator: ', i)
+                let role = `speculator${i + 1}`
+                assingments[role].user_id = pool[0].user_id
+                assingments[role].player_name = pool[0].player_name
+                pool.splice(0, 1)
+                // if(pool.length){
+                //     // i = 6
+                //     break
+                // }
+            }
+            else{
+                // remove unassigned speculators
+                let role = `speculator${i + 1}`
+                delete assingments[role]
+            }
+        }
+
+        let assignmentArray = []
+        for(let role in assingments){
+            assignmentArray.push(assingments[role])
+        }
+
+        console.log('assignments: ', assingments)
+        console.log('pool: ', pool)
+
+        assignGamePlayers(localUser.user_metadata.game_id, assignmentArray)
+        .catch(err => {
+            console.log('error assigning players: ', err)
+        })
+        .finally(() => {
+            setLoadingModal(false)
+        })
+    }
 </script>
 
 <div class="lobby flex fd-col">
@@ -185,10 +245,21 @@
     </div>
 
     <div class="lobby-controls flex jc-end ai-end">
-        {#if isAdmin}
-            <button class="submit-button" disabled={!allSelected}>
-                Start Game
+        {#if isAdmin && !haveRequiredRoles}
+            <button 
+                class="submit-button" 
+                disabled={!allSelected}
+                on:click={submit}
+                >
+                Assign Players
             </button>
+            <!-- <button 
+                class="submit-button" 
+                disabled={!haveRequiredRoles}
+                on:click={start}
+                >
+                Start Game
+            </button> -->
         {:else}
         <div class="waiting">
             <p>Waiting for game to start.</p>

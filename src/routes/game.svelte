@@ -1,20 +1,44 @@
 <script lang="ts">
     import Lobby from "$lib/components/game/lobby.svelte";
-    import { currentGame, currentUser } from "$lib/state";
+    import { currentGame, currentUser, gamePlayers } from "$lib/state";
     import { onMount } from "svelte";
     let exists = false
-    let playable = false
+    let haveRequiredRoles = false
     let inLobby = false
+    $:playable = haveRequiredRoles && exists
 
     currentGame.subscribe(game => {
         exists = game.game_id !== ""
-        playable = game.started && !game.ended
+        // playable = game.started && !game.ended
         inLobby = !game.started && !game.ended
     })
 
-    // onMount(() => {
-    //     watch()
-    // })
+    gamePlayers.subscribe(players => {
+        let roles = {
+            clubs: null,
+            diamonds: null,
+            hearts: null,
+            spades: null,
+        }
+
+        for(let pyr in players){
+            let player = players[pyr]
+            if(player && player.user_id){
+                player.user_id 
+                    && player.player_name 
+                    && (roles[player.role] = player)
+            }
+        }
+
+        if(
+            roles.clubs 
+            && roles.diamonds
+            && roles.hearts
+            && roles.spades
+        ){
+            haveRequiredRoles = true
+        }
+    })
 </script>
 
 <div class="page-wrapper">
@@ -25,7 +49,7 @@
             <h3>A game is available</h3>
             <h1>{$currentGame.game_id}</h1>
         </div>
-    {:else if exists && inLobby}
+    {:else if exists && inLobby && !haveRequiredRoles}
         <ul class="lobby-details">
             <li>waiting for game data</li>
             <li>exists: {exists}</li>
@@ -33,7 +57,9 @@
             <li>Playable: {playable}</li>
             <li>In Lobby: {inLobby}</li>
         </ul>
-        <Lobby />
+        <Lobby 
+            haveRequiredRoles={haveRequiredRoles}
+        />
     {:else}
         <div class="loading-lobby flex">
             <div class="loading-lobby-inner flex fd-col">
