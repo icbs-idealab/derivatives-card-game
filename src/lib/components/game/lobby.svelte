@@ -9,7 +9,8 @@
     import { setLoadingModal } from "$lib/actions";
     import { roleKeys } from "$lib/constants";
     import { makeGamePlayers } from "$lib/helpers";
-import { get } from "svelte/store";
+    import { get } from "svelte/store";
+    import Icon from "../icon/icon.svelte";
 
     let defaultGamePlayers = makeGamePlayers()
     let localLobby = []
@@ -90,6 +91,8 @@ import { get } from "svelte/store";
     gamePlayers.subscribe(newGamePlayers => {
         console.log('got new game players in <Lobby /> ', newGamePlayers)
         let adminId = get(currentGame).admin.user_id
+        console.log('got admin: ', adminId)
+
         for(let gamePlayer in newGamePlayers){
             if(newGamePlayers[gamePlayer].user_id === adminId && adminId !== ""){
                 adminRole = {
@@ -102,20 +105,6 @@ import { get } from "svelte/store";
                 selectedRoles[gamePlayer] = {...adminRole}
             }
         }
-        // newGamePlayers.map(player => {
-        //     if(player.user_id){
-        //         // will alayws be admin
-        //         adminRole = {
-        //             role: player.role,
-        //             user_id: player.user_id,
-        //             player_name: player.player_name,
-        //             game_id: player.game_id
-        //         }
-
-        //         selectedRoles[player.role] = {...adminRole}
-        //     }
-        // })
-
     })
 </script>
 
@@ -134,6 +123,9 @@ import { get } from "svelte/store";
             {/each}
             {#if adminRole.player_name}
                 <div class="pending-player flex fd-col">
+                    <div class="is-admin flex">
+                        👑
+                    </div>
                     <div class="pp-icon" style="color: var(--blue);">☻</div>
                     <div class="pp-name">
                         {adminRole.player_name}
@@ -216,14 +208,30 @@ import { get } from "svelte/store";
         padding: 15vw;
     }
 
+    .lobby h1 {
+        margin: 0;
+    }
+
     .pending-player {
+        position: relative;
         margin-left: 15px
+    }
+
+    .is-admin {
+        position: absolute;
+        bottom: 42px;
+        left: -1px;
+        right: 0;
+        height: 18px;
+        width: 36px;
     }
 
     .pp-icon {
         font-size: 2em;
-        margin: 0;
-        height: 1.3em;
+        margin: 0 0 8px;
+        height: 36px;
+        width: 36px;
+        color: var(--dm-lighter)
     }
 
     .pp-name {

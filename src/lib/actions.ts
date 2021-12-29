@@ -205,6 +205,10 @@ const watchLobby = async (game_id: string) => {
             console.log('got new lobby payload: ', payload)
             syncLobby(payload.new)
         })
+        .on('DELETE', (payload) => {
+            console.log('got new lobby deletion payload: ', payload)
+            syncLobby(payload.new, true)
+        })
         .subscribe()
 
     console.log('watchLobby() -> subscribed to lobby: ', subscription)
@@ -230,33 +234,33 @@ export const getAndWatchLobby = async (game_id: string) => {
     }
 }
 
-export function syncLobby(update){
+export function syncLobby(update, remove: boolean = false){
     lobby.update(currentLobbyPlayers => {
         // players.data
-        console.log('current lobby players: ', currentLobbyPlayers)
+        console.log('syncing... current lobby players: ', currentLobbyPlayers)
 
         let currentPlayers = [...currentLobbyPlayers]
         
         if(Array.isArray(update)){
+            console.log('syncing. New payload is Array')
             update.map(player => {
                 let index = currentPlayers.findIndex(currentPlayer => currentPlayer.user_id === player.user_id)
-                if(index > -1){
-                    // player already exists
-                }
-                else{
-                    currentPlayers.push({...player})
-                }
+                remove && index !== -1 && currentPlayers.splice(index, 1)
+                !remove && index === -1 && currentPlayers.push({...player})
+                // player already exists
+                !remove && index !== -1 && console.log('player with given ID already exists in local lobby, will not update')
             })
         }
         else{
             let index = currentPlayers.findIndex(currentPlayer => currentPlayer.user_id === update.user_id)
-            index !== -1 && currentPlayers.push({...update})
+            console.log('syncing. New payload is Object. Index was: ', index)
+            remove && index !== -1 && currentPlayers.splice(index, 1)
+            !remove && index === -1 && currentPlayers.push({...update})
         }
     
         return currentPlayers    
     })
 }
-
 
 async function insertPlayer(game_id, player){
     const {data, error} = await supabase
@@ -276,10 +280,11 @@ function checkGameForAvailableRoles(playerData){
     console.log('checking against: ', playerData)
         let count = 0
         // let ps = Object.keys(playerData)
-        allRoleNames.map(role => {
-            playerData[role].user_id === "" && (count += 1)
+        playerData.map(player => {
+            player.user_id === "" && (count += 1)
         })
 
+        // compare to allRoleNames in case some error prevented
         return count !== allRoleNames.length
 }
 
@@ -446,7 +451,7 @@ export async function getGame(game_id){
         .select('*')
         .eq('game_id', game_id)
         .limit(1)
-        .single()
+        .maybeSingle()
 
     if(error){
         // set application wide error notifications here
@@ -491,6 +496,7 @@ export async function getAndWatchGame(game_id){
 }
 
 function parseGameData(data){
+    console.log('parsing game data: ', data)
     return {
         ...data,
         admin: JSON.parse(data.admin)
@@ -499,13 +505,23 @@ function parseGameData(data){
 
 export async function leaveGame(){
     setLoadingModal(true)
-    await supabase.auth.update({
+    
+    const loggedIn = await supabase.auth
+    if(loggedIn && loggedIn.update)
+    await loggedIn.update({
         data: {
             game_id: '',
             player_id: '',
             role: '',
         }
     })
+
+    let id = loggedIn.user().id
+
+    await supabase
+        .from(`game-lobby:user_id=eq.${id}`)
+        .delete()
+
 
     setLoadingModal(false)
 

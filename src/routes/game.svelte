@@ -25,7 +25,7 @@
             <h3>A game is available</h3>
             <h1>{$currentGame.game_id}</h1>
         </div>
-    {:else}
+    {:else if exists && inLobby}
         <ul class="lobby-details">
             <li>waiting for game data</li>
             <li>exists: {exists}</li>
@@ -34,11 +34,35 @@
             <li>In Lobby: {inLobby}</li>
         </ul>
         <Lobby />
+    {:else}
+        <div class="loading-lobby flex">
+            <div class="loading-lobby-inner flex fd-col">
+                <h1>Loading Lobby</h1>
+                <div class="is-loading loading-line"></div>
+            </div>
+        </div>
     {/if}
     <!-- else -->
 </div>
 
 <style>
+    .loading-lobby {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .loading-lobby-inner {
+        padding: 30px;
+    }
+
+    .loading-line{
+        height: 4px;
+        width: 300px;
+    }
+
     .lobby-details {
         display: grid;
         grid-auto-columns: auto;

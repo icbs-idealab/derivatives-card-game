@@ -12,14 +12,13 @@
     <!-- user details -->
 
     <div class="user-details">
-        <p class="current-game">
-            Game ID:
-            <span>{activeGame.game_id || 'Not in game'}</span>
-        </p>
-        <p class="current-user">
-            UID: 
-            <span>{activeUser.id}</span>
-        </p>
+        <div class="current-game">
+            <p>Game ID: <span>{activeGame.game_id || 'Not in game'}</span></p>
+        </div>
+        <div class="current-user">
+            <p>UID: <span>{activeUser.id}</span> </p>
+            <p>Email: <span>{activeUser.email}</span> </p>  
+        </div>
     </div>
 
     <!-- game menu -->
