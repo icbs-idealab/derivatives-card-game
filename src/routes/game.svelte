@@ -1,19 +1,25 @@
 <script lang="ts">
+    import { getAndWatchTrades } from "$lib/actions";
     import Lobby from "$lib/components/game/lobby.svelte";
-    import { currentGame, currentUser, gamePlayers } from "$lib/state";
-    import { onMount } from "svelte";
+    import Play from "$lib/components/game/play.svelte";
+    import { makeGamePlayersAsObject } from "$lib/helpers";
+    import { currentGame, currentUser, gamePlayers, gameTrades } from "$lib/state";
+    import type { AppGame } from "$lib/types";
+    import { afterUpdate, onMount } from "svelte";
+import { get } from "svelte/store";
     let exists = false
     let haveRequiredRoles = false
     let inLobby = false
+    let defaultPlayers = {...makeGamePlayersAsObject()}
+    let players = defaultPlayers
+    let game: AppGame | null
+    let trades = []
+    let watchingTrades = false
+    let showGameRound = false
     $:playable = haveRequiredRoles && exists
+    let playerRole = ''
 
-    currentGame.subscribe(game => {
-        exists = game.game_id !== ""
-        // playable = game.started && !game.ended
-        inLobby = !game.started && !game.ended
-    })
-
-    gamePlayers.subscribe(players => {
+    function checkRequiredRoles(players){
         let roles = {
             clubs: null,
             diamonds: null,
@@ -38,16 +44,107 @@
         ){
             haveRequiredRoles = true
         }
+    }
+
+    function calcPlayerRole(){
+        let playerId = get(currentUser).id
+        // console.log('calculatig player role for id: ', playerId)
+        if(playerId){
+            // playerRole
+            for(let p in players){
+                // console.log('checking for role in ', p)
+                // console.log('role id is ', players[p].user_id)
+                if( playerId && players[p].user_id === playerId ){
+                    playerRole = p
+                    break
+                }
+            }
+        }
+    }
+
+    function setPlayers(newPlayers){
+        console.log('setting players locally: ', newPlayers)
+        players = newPlayers
+    }
+
+    function checkGameDataDiff(newGame){
+        if(
+            game
+            && game.game_id
+            && newGame
+            && newGame.game_id
+        ){
+            // there is a current game to compare
+            return JSON.stringify(game) !== JSON.stringify(newGame)
+        }
+        // no game to compare, default to true
+        else return true
+    }
+
+    currentGame.subscribe(newGame => {
+        if(checkGameDataDiff(newGame)){
+            game = newGame
+        }
+        exists = newGame.game_id !== ""
+        inLobby = !newGame.started && !newGame.ended
     })
+
+    gamePlayers.subscribe(players => {
+        checkRequiredRoles(players)
+        setPlayers(players)
+        if(!playerRole){
+            calcPlayerRole()
+        }
+    })
+
+    gameTrades.subscribe(newGameTrades => {
+        console.log('got new game trades: ', newGameTrades)
+        if(JSON.stringify(newGameTrades) !== JSON.stringify(trades)){
+            console.log('trades different, will update')
+            trades = newGameTrades
+        }
+    })
+    // async function watchTradesLocal(){
+    //     gameTrades.subscribe(newGameTrades => {
+    //         console.log('got new game trades: ', newGameTrades)
+    //         trades = newGameTrades
+    //     })
+    // }
+
+    async function watchTradesInServer(){
+        const {trades: t, watching} = await getAndWatchTrades(game.game_id)
+        if(watching){
+            watchingTrades = true
+        }
+    }
+
+    afterUpdate(() => {
+        if(playable && !watchingTrades){
+            console.log('will watch all trades')
+            watchTradesInServer()
+            // watchTradesLocal()
+        }
+    })
+
+    let showRevealRound = false
 </script>
 
 <div class="page-wrapper">
     <!-- <h1>{$currentGame.game_id}</h1> -->
     <!-- if authed -->
     {#if playable}
-        <div class="game-wrapper">
-            <h3>A game is available</h3>
-            <h1>{$currentGame.game_id}</h1>
+        <div class="play-wrapper">
+            <!-- <h3>A game is available</h3>
+            <h1>{$currentGame.game_id}</h1> -->
+            <Play
+                showRevealRound={showRevealRound}
+                showGameRound={showGameRound}
+                haveRequiredRoles={haveRequiredRoles}
+                players={players}
+                game={game}
+                trades={trades}
+                playerRole={playerRole}
+            />
         </div>
     {:else if exists && inLobby && !haveRequiredRoles}
         <ul class="lobby-details">
@@ -63,7 +160,7 @@
     {:else}
         <div class="loading-lobby flex">
             <div class="loading-lobby-inner flex fd-col">
-                <h1>Loading Lobby</h1>
+                <h1>Loading Game</h1>
                 <div class="is-loading loading-line"></div>
             </div>
         </div>

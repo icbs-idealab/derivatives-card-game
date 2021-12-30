@@ -3,7 +3,7 @@ import { get } from "svelte/store"
 import { allRoleNames, defaultGame, defaultUser } from "./constants"
 import { buildShuffledDeck, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby } from "./state"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades } from "./state"
 import type { AppGamePlayers, NewGameProps, SupabaseUser } from "./types"
 import {nanoid} from 'nanoid'
 import { page } from "$app/stores"
@@ -562,6 +562,56 @@ export async function leaveGame(){
     setTimeout(() => {
         redirect("/")
     })
+}
+
+// TRADES
+
+export async function getTrades(game_id: string){
+    const {data, error} = await supabase
+        .from('game-trades')
+        .select("*")
+        .eq("game_id", game_id)
+        .limit(10)
+        .order('created_at', {ascending: true})
+    
+    if(error){
+        console.log('error getting trades: ', error)
+        return null 
+    }
+    else{
+        gameTrades.set(data)
+        return data
+    }
+}
+
+function insertTrade(tradeData){
+    gameTrades.update(currentTrades => {
+        let newTrades = currentTrades.concat([tradeData])
+        newTrades.length = 10
+        return newTrades
+    })
+}
+
+export async function watchTrades(game_id: string){
+    const subscription = await supabase
+        .from(`game-trades:game_id=.eq${game_id}`)
+        .on("INSERT", (payload) => {
+            if(payload.new.game_id === game_id){
+                insertTrade(payload.new)
+            }
+        })
+        .subscribe()
+
+    serverSubscriptions.update((original) => ({...original, trades: subscription}))
+}
+
+export async function getAndWatchTrades(game_id: string){
+    const trades = await getTrades(game_id)
+    let watching
+    if(trades && !get(serverSubscriptions).trades){
+        watching = await watchTrades(game_id)
+    }
+    return {trades, watching}
 }
 
 

@@ -47,7 +47,7 @@
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { redirect } from "$lib/helpers";
     import { currentGame, currentUser, serverSubscriptions, showLoadingModal } from "$lib/state";
-    import { onMount } from "svelte";
+    import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
     import type { AppGame, SupabaseUser } from '$lib/types';
@@ -122,6 +122,12 @@
 
     onMount(() => {
         watch()
+    })
+
+    afterUpdate(() => {
+        if(authChecked && !activeUser.id){
+            redirect('/')
+        }
     })
 
 </script>

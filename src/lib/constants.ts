@@ -125,6 +125,10 @@ export let suits = {
         symbol: '🤔',
         color: 'black',
     },
+    guest: {
+        symbol: '🤔',
+        color: 'black',
+    },
 } 
 
 export const speculatorKeys = new Array(6).fill('').map((s, i) => `speculator${i+1}`)

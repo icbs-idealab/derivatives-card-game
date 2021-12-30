@@ -74,6 +74,14 @@ export function makeGamePlayers(params?): AppGamePlayers {
     else return allRoleNames.map(role => ({...defaultGamePlayer}))
 }
 
+export function makeGamePlayersAsObject(){
+    let players = {}
+    allRoleNames.map(role => {
+        players[role] = {...defaultGamePlayer}
+    })
+    return players
+}
+
 // DECK
 
 function getRandomCard(hand){
