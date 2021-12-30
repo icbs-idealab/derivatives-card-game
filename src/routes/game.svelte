@@ -2,11 +2,12 @@
     import { getAndWatchTrades } from "$lib/actions";
     import Lobby from "$lib/components/game/lobby.svelte";
     import Play from "$lib/components/game/play.svelte";
+    import { emptyHand, emptyReveals, roleKeys } from "$lib/constants";
     import { makeGamePlayersAsObject } from "$lib/helpers";
     import { currentGame, currentUser, gamePlayers, gameTrades } from "$lib/state";
     import type { AppGame } from "$lib/types";
     import { afterUpdate, onMount } from "svelte";
-import { get } from "svelte/store";
+    import { get } from "svelte/store";
     let exists = false
     let haveRequiredRoles = false
     let inLobby = false
@@ -62,6 +63,27 @@ import { get } from "svelte/store";
         }
     }
 
+    function countReveals(_game, _players){
+        let revealed = {...emptyHand}
+        _game.deck.revealed.map(card => {
+            revealed[card] += 1
+        })
+        for(let p in _players){
+            if(roleKeys.indexOf((p as any)) !== -1){
+                let player = _players[p]
+                for(let r in player.revealed){
+                    let card = player.revealed[r]
+                    if(card){
+                        revealed[card] += 1
+                    }
+                }
+            }
+        }
+        return revealed
+    }
+
+    $:revealed = countReveals(game, players)
+
     function setPlayers(newPlayers){
         console.log('setting players locally: ', newPlayers)
         players = newPlayers
@@ -87,6 +109,10 @@ import { get } from "svelte/store";
         }
         exists = newGame.game_id !== ""
         inLobby = !newGame.started && !newGame.ended
+
+        if(exists){
+            countReveals(newGame, players)
+        }
     })
 
     gamePlayers.subscribe(players => {
@@ -144,6 +170,7 @@ import { get } from "svelte/store";
                 game={game}
                 trades={trades}
                 playerRole={playerRole}
+                revealed={revealed}
             />
         </div>
     {:else if exists && inLobby && !haveRequiredRoles}

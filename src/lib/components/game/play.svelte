@@ -1,7 +1,8 @@
 <script lang="ts">
-    import { defaultGame, roleKeys } from "$lib/constants";
+    import { defaultGame, emptyHand, emptyReveals, roleKeys } from "$lib/constants";
     import { makeGamePlayersAsObject } from "$lib/helpers";
     import type { AppGame } from "$lib/types";
+import { afterUpdate } from "svelte";
     import Backdrop from "../app/backdrop.svelte";
     import Button from "../button/button.svelte";
     import GameProperties from "./game-properties.svelte";
@@ -18,10 +19,30 @@
     export let game: AppGame = {...defaultGame}
     let defaultPlayers = {...makeGamePlayersAsObject()}
     export let players = {...defaultPlayers}
+    export let revealed = {...emptyHand}
     export let initializeGame: () => any = () => console.log('init')
     export let endGame: () => any = () => console.log('end game')
     export let nextRound: () => any = () => console.log('next round')
     $:derivedBalance = "$0.48"
+    
+    function calcHand(cards, revealed){
+        let h = {...cards}
+        // console.log('$H: ', h)
+        // console.log('$H2: ', revealed)
+        for(let revealRound in revealed){
+            let card = revealed[revealRound]
+            // console.log('$card: ', card)
+            if(card){
+                h[card] -= 1
+            }
+        }
+
+        return h
+    }
+
+    $:playerCards = playerRole ? players[playerRole].hand : emptyHand
+    $:playerReveals = playerRole ? players[playerRole].revealed : emptyReveals
+    $:hand = calcHand(playerCards, playerReveals)
 
     let localRates = {
         buy: 36,
@@ -40,6 +61,8 @@
 
         <div class="div flex" style="position:fixed; bottom: 50px; right: 50px;">
             Player role {playerRole}
+            <pre style="font-size: 0.7em;"> {JSON.stringify(playerCards)} </pre>
+            <pre style="font-size: 0.7em;"> {JSON.stringify(hand)} </pre>
         </div>
 
         <div class="game-interactive">
@@ -53,6 +76,8 @@
                             roleData={players[role]}
                             localRates={localRates}
                             suit={role}
+                            playerCards={hand}
+                            revealed={revealed[role]}
                         />
                     {/each}
 

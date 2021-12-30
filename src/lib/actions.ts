@@ -339,7 +339,7 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
     const shuffledDeck = buildShuffledDeck()
     newGame.deck = {
         held: shuffledDeck.shuffled,
-        reveals: [],
+        revealed: [],
     }
 
     // create game players

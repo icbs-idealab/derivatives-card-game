@@ -4,7 +4,7 @@
     import PlayerInventory from "./player-inventory.svelte";
     import ValueChanger from "./value-changer.svelte";
     import type { AppGamePlayer, PlayerRole, SuitName } from "$lib/types"
-    import { defaultGamePlayer, suits } from "$lib/constants";
+    import { defaultGamePlayer, emptyHand, suits } from "$lib/constants";
     import BuySellControls from "./buy-sell-controls.svelte";
     import ActivePlayerControls from "./active-player-controls.svelte";
     
@@ -17,7 +17,9 @@
     }
     export let suit: SuitName | null
     export let canTrade = false
-
+    export let playerCards = emptyHand
+    export let revealed = 0
+    $:cardCount = suit ? playerCards[suit] : 0
     $:buy = localRates.buy !== roleData.buy ? localRates.buy : roleData.buy
     $:sell = localRates.sell !== roleData.sell ? localRates.sell : roleData.sell
     function updateLocal(value, type){
@@ -72,9 +74,13 @@
         {/if}
     </div>
     <!-- player inventory -->
-    <PlayerInventory />
+    <PlayerInventory 
+        cardCount={cardCount}
+    />
     <!-- deck info -->
-    <PlayerHand />
+    <PlayerHand 
+        revealed={revealed}
+    />
 
     {#if isActivePlayer && maxSpreadWarning}
         <div class="max-spread-warning"></div>
