@@ -21,14 +21,12 @@ export const makePlayers: () => AppGamePlayers = () => {
     return (p as AppGamePlayers)
 }
 
-// export function makePlayers(): AppGamePlayers {
-//     let p = {}
-//     allRoleNames.forEach((role) => {
-//         p[role] = { ...defaultGamePlayer, role}
-//     })
-//     return (p as AppGamePlayers)
-// }
-
+export function getRelevantTrades(tradeList, userId, playerRole){
+    return tradeList.filter(trade => {
+        return trade.actor === userId 
+            || trade.market === playerRole
+    })
+}
 
 export function findGamePlayerById(){
     let user = get(currentUser)

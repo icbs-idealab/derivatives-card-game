@@ -103,6 +103,13 @@ export const currentGame = writable({...defaultGame},
 
 export const gameTrades = writable([])
 
+export const canTrade = writable({
+    clubs: true,
+    diamonds: true,
+    hearts: true,
+    spades: true,
+})
+
 // LOADING / MODAL
 
 export const showLoadingModal = writable(false)

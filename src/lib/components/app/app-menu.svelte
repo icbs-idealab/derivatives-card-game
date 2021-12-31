@@ -54,7 +54,7 @@
     .app-menu {
         position: fixed;
         bottom: 35px;
-        left: 45px;
+        left: 8vw;
         height: auto;
         width: auto;
         margin: 0;

@@ -3,10 +3,12 @@
     export let label: string = 'label';
     export let type: string = ''
     export let active: boolean = true
-    export let trade: () => void = () => {console.log('clicked trade')}
+    export let handleTrade: () => void = () => {console.log('clicked trade')}
     function beforeTrade(){
-        console.log('before trade')
-        active && trade()
+        console.log('before trade ', active)
+        if(active) {
+            handleTrade()
+        }
     }
 </script>
 

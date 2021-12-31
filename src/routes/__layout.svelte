@@ -152,7 +152,7 @@
     .user-details {
         position: fixed;
         top: 35px;
-        left: 45px;
+        left: 8vw;
     }
 
     .user-details p {

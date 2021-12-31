@@ -2,14 +2,14 @@
     import Trade from "./trade.svelte";
     export let trades = []
 
-    $:usable = [...trades]
-    usable && (usable.length = 10)
+    // let usable = [...trades]
+    // usable.length > 10 && (usable.length = 10)
 </script>
 
 <div class="game-ledger">
     <div class="ledger">
         <div class="items">
-            {#each usable as trade}
+            {#each trades as trade}
                 <Trade {...trade} />
             {/each}
         </div>

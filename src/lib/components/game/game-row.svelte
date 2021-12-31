@@ -7,7 +7,9 @@
     import { defaultGamePlayer, emptyHand, suits } from "$lib/constants";
     import BuySellControls from "./buy-sell-controls.svelte";
     import ActivePlayerControls from "./active-player-controls.svelte";
+    import { canTrade } from "$lib/state";
     
+    export let isLastRevealed: boolean = false
     export let isActivePlayer = false
     export let maxSpread = 3
     export let roleData: AppGamePlayer = {...defaultGamePlayer}
@@ -16,18 +18,16 @@
         sell: 40,
     }
     export let suit: SuitName | null
-    export let canTrade = false
+    $:canTradeState = $canTrade
     export let playerCards = emptyHand
     export let revealed = 0
+    export let contracts
     $:cardCount = suit ? playerCards[suit] : 0
     $:buy = localRates.buy !== roleData.buy ? localRates.buy : roleData.buy
     $:sell = localRates.sell !== roleData.sell ? localRates.sell : roleData.sell
     function updateLocal(value, type){
         console.log('would update value: ', value, type)
         localRates[type] = value
-    }
-    function processTrade(value, type){
-        console.log('would update value in backend: ', value, type)
     }
 
     function saveNewPrices(value, type){
@@ -67,8 +67,7 @@
             <BuySellControls 
                 buy={roleData.buy}
                 sell={roleData.sell}
-                disabled={!canTrade}
-                processTrade={processTrade}
+                disabled={!canTradeState[suit]}
                 suit={suit}
             />
         {/if}
@@ -76,10 +75,14 @@
     <!-- player inventory -->
     <PlayerInventory 
         cardCount={cardCount}
+        contracts={contracts}
+        suit={suit}
     />
     <!-- deck info -->
     <PlayerHand 
         revealed={revealed}
+        suit={suit}
+        isLastRevealed={isLastRevealed}
     />
 
     {#if isActivePlayer && maxSpreadWarning}

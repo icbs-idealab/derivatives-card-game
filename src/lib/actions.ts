@@ -1,9 +1,9 @@
 import { supabase } from "$lib/backend"
 import { get } from "svelte/store"
-import { allRoleNames, defaultGame, defaultUser } from "./constants"
+import { allRoleNames, defaultGame, defaultUser, playerRevealRounds } from "./constants"
 import { buildShuffledDeck, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades } from "./state"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade } from "./state"
 import type { AppGamePlayers, NewGameProps, SupabaseUser } from "./types"
 import {nanoid} from 'nanoid'
 import { page } from "$app/stores"
@@ -105,6 +105,21 @@ export const singOut = async () => {
 }
 
 // PLAYER
+
+export const updatePlayer = async (newData, game_id, user_id) => {
+    return await supabase.from('game-players')
+        .update(newData)
+        .select('*')
+        .eq('game_id', game_id)
+        .eq('user_id', user_id)
+}
+
+export const revealPlayerCard = async (newPlayerData, game_id, user_id) => {
+    const {data, error} = await updatePlayer(newPlayerData, game_id, user_id)
+    data !== null && console.log('result of player update: ', data)
+    error !== null && console.log('error updating player: ', data)
+    return {data, error, success: !error}
+}
 
 export const getPlayerData = async (game_id: string) => {
     console.log('getting player data for: ', game_id)    
@@ -476,8 +491,52 @@ export const assignGamePlayers = async (game_id, roleAssignments) => {
     })
 }
 
-export const startGame = async (game_id, roleAssignments) => {
+export async function updateGame(updateValue){
+    let game = get(currentGame)
+    let {game_id} = game
+    if(game_id){
+        let {data, error} = await supabase
+            .from(`games`)
+            .update(updateValue)
+            .eq('game_id', game_id)
+
+        if(!error){
+            console.log('successfully updated game: ', data)
+            return {data, success: true}
+        }
+        else{
+            console.log('error starting game: ', error)
+            return {error, success: false}
+        }
+
+    }
+}
+
+export const startGame = async () => {
     // assign player roles
+    let updateResult = await updateGame({started: true, round: 1})
+    return updateResult
+}
+
+export const nextRound = async () => {
+    let {round, deck} = get(currentGame)
+    let next = round + 1
+    console.log('$$ next round')
+    console.log('$$ is next round a player reveal? ', playerRevealRounds[next])
+    let update: {deck?: any, round: number} = {
+        round: next
+    }
+    
+    if(  !playerRevealRounds[next] ){
+        let newDeck = {...deck}
+        let card = newDeck.held.shift()
+        newDeck.revealed.push(card)
+        update.deck = newDeck
+        console.log('$$ new deck: ', newDeck)
+    }
+
+    let updateResult = await updateGame({round: round + 1, deck})
+    return updateResult
 }
 
 export async function getGame(game_id){
@@ -564,6 +623,55 @@ export async function leaveGame(){
     })
 }
 
+const publishTrade = async (trade) => {
+    return await supabase
+        .from('game-trades')
+        .insert(trade)
+        .select('*')
+}
+
+export async function processTrade({market, type, value}){
+    canTrade.update(current => {
+        return {
+            ...current,
+            [market]: false
+        }
+    })
+
+    let player = get(currentUser)
+    let game = get(currentGame)
+
+    let trade = {
+        market,
+        type,
+        price: value,
+        actor: player.id,
+        game_id: game.game_id,
+        round: game.round
+    }
+    console.log('would trade: ', trade)
+
+    // const {data, error} = await publishTrade(trade)
+    publishTrade(trade)
+    .then(({data}) => {
+        console.log('successfully published trades: ', data)
+    }) 
+    .catch(error => {
+        console.log('error publishing trade: ', error)
+    })
+    .finally(() => {
+        setTimeout(() => {
+            canTrade.update(current => {
+                return {
+                    ...current,
+                    [market]: true
+                }
+            })    
+        }, 1200)
+    })
+
+}
+
 // TRADES
 
 export async function getTrades(game_id: string){
@@ -571,8 +679,8 @@ export async function getTrades(game_id: string){
         .from('game-trades')
         .select("*")
         .eq("game_id", game_id)
-        .limit(10)
-        .order('created_at', {ascending: true})
+        // .limit(10)
+        .order('created_at', {ascending: false})
     
     if(error){
         console.log('error getting trades: ', error)
@@ -585,17 +693,23 @@ export async function getTrades(game_id: string){
 }
 
 function insertTrade(tradeData){
+    console.log('inserting trade: ', tradeData)
     gameTrades.update(currentTrades => {
-        let newTrades = currentTrades.concat([tradeData])
-        newTrades.length = 10
+        let newTrades = [tradeData].concat(currentTrades)
+        console.log('new trade state: ', newTrades)
+        // if(newTrades.length > 10){
+        //     newTrades.splice(-1, 1)
+        // }
+        
         return newTrades
     })
 }
 
 export async function watchTrades(game_id: string){
     const subscription = await supabase
-        .from(`game-trades:game_id=.eq${game_id}`)
+        .from(`game-trades:game_id=eq.${game_id}`)
         .on("INSERT", (payload) => {
+            console.log('saw trade: ', payload.new)
             if(payload.new.game_id === game_id){
                 insertTrade(payload.new)
             }
@@ -603,13 +717,18 @@ export async function watchTrades(game_id: string){
         .subscribe()
 
     serverSubscriptions.update((original) => ({...original, trades: subscription}))
+    return subscription
 }
 
 export async function getAndWatchTrades(game_id: string){
     const trades = await getTrades(game_id)
     let watching
     if(trades && !get(serverSubscriptions).trades){
+        console.log('no trade subscription defined. will watch trades')
         watching = await watchTrades(game_id)
+    }
+    else{
+        console.log('already had trade watcher')
     }
     return {trades, watching}
 }
@@ -634,4 +753,3 @@ export function displayErrorReporter(state: boolean){
 export function displayRules(state: boolean){
     showGameRules.set(state)
 }
-

@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { defaultGame, emptyHand, emptyReveals, roleKeys } from "$lib/constants";
+    import { revealPlayerCard } from "$lib/actions";
+    import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
     import { makeGamePlayersAsObject } from "$lib/helpers";
     import type { AppGame } from "$lib/types";
-import { afterUpdate } from "svelte";
+    import { afterUpdate } from "svelte";
     import Backdrop from "../app/backdrop.svelte";
     import Button from "../button/button.svelte";
     import GameProperties from "./game-properties.svelte";
@@ -15,15 +16,30 @@ import { afterUpdate } from "svelte";
     export let showRevealRound = false
     export let haveRequiredRoles = false
     export let trades = []
+    export let balance = 0
+    export let contracts = {...emptyHand}
     export let playerRole: string = ''
     export let game: AppGame = {...defaultGame}
+    export let lastRevealed = {...emptySuitsBool}
     let defaultPlayers = {...makeGamePlayersAsObject()}
     export let players = {...defaultPlayers}
     export let revealed = {...emptyHand}
-    export let initializeGame: () => any = () => console.log('init')
+    export let revealsForRound = {
+        clubs: "",
+        diamonds: "",
+        hearts: "",
+        spades: "",
+    }
+    export let startGame: () => any = () => console.log('init')
     export let endGame: () => any = () => console.log('end game')
     export let nextRound: () => any = () => console.log('next round')
-    $:derivedBalance = "$0.48"
+    
+    function withSymbol(val){
+        let symbol = val < 0 ? '-' : ''
+        return `${symbol}$${Math.abs(val/100)}`
+    }
+
+    $:derivedBalance = withSymbol(balance)
     
     function calcHand(cards, revealed){
         let h = {...cards}
@@ -44,9 +60,55 @@ import { afterUpdate } from "svelte";
     $:playerReveals = playerRole ? players[playerRole].revealed : emptyReveals
     $:hand = calcHand(playerCards, playerReveals)
 
+    let processingCardSelection = false
+    let selectedCard = ''
+    function selectCardForReaval(card){
+        selectedCard = card
+    }
+    function revealSelectedCard(){
+        if(playerRole && players[playerRole]){
+            processingCardSelection = true
+            let update = players[playerRole]
+            update.hand[selectedCard] -= 1
+            update.revealed[game.round] = selectedCard
+
+            console.log('will update player with new hand: ', update)
+
+            revealPlayerCard(
+                update,
+                game.game_id,
+                players[playerRole].user_id
+            )
+            .then(res => {
+                console.log('successfully revealed card: ', res)
+            })
+            .catch(err => {
+                console.log('error revealing card: ', err)
+            })
+            .finally(() => {
+                processingCardSelection = false
+            })
+        }
+    }
+
     let localRates = {
         buy: 36,
         sell: 40,
+    }
+
+    let canTrade = {
+        clubs: true,
+        diamonds: true,
+        hearts: true,
+        spades: true,
+    }
+
+    function processTrade(suit, type){
+        console.log('processing trade in play.svelte')
+        canTrade[suit] = false
+        setTimeout(() => {
+            canTrade[suit] = true
+        }, 3000)
     }
 </script>
 
@@ -54,20 +116,30 @@ import { afterUpdate } from "svelte";
     <div class="game-output">
         <GameProperties 
             round={game.round}
+            players={players}
         />
         <SectionLabels />
 
         <!-- game main -->
 
-        <div class="div flex" style="position:fixed; bottom: 50px; right: 50px;">
-            Player role {playerRole}
-            <pre style="font-size: 0.7em;"> {JSON.stringify(playerCards)} </pre>
-            <pre style="font-size: 0.7em;"> {JSON.stringify(hand)} </pre>
+        <div class="div flex" style="position:fixed; bottom: 50px; right: 50px; font-size: 0.65em;">
+            <!-- Player role {playerRole} -->
+            <!-- <pre style="font-size: 0.7em;"> {JSON.stringify(playerCards)} </pre> -->
+            <pre> {JSON.stringify(hand)} </pre>
+            <!-- <pre> {JSON.stringify(hand)} </pre> -->
         </div>
 
         <div class="game-interactive">
             {#if showRevealRound}
-                <RevealView />
+                <RevealView 
+                    playerHand={playerCards}
+                    selectedCard={selectedCard}
+                    selectCard={selectCardForReaval}
+                    localRole={playerRole}
+                    reveals={revealsForRound}
+                    revealCard={revealSelectedCard}
+                    processingCardSelection={processingCardSelection}
+                />
             {:else}
                 <div class="game-markets">
                     {#each roleKeys as role}
@@ -77,15 +149,17 @@ import { afterUpdate } from "svelte";
                             localRates={localRates}
                             suit={role}
                             playerCards={hand}
+                            contracts={contracts[role]}
                             revealed={revealed[role]}
+                            isLastRevealed={lastRevealed[role]}
                         />
                     {/each}
 
                     <!-- controls -->
 
                     <div class="game-controls flex">
-                        {#if !game.started && !game.ended && game.round < 33}
-                            <Button action={initializeGame} label="Start Game" disabled={!haveRequiredRoles} />
+                        {#if !game.started && !game.ended && game.round === 0}
+                            <Button action={startGame} label="Start Game" disabled={!haveRequiredRoles} />
                         {:else if game.started && !game.ended && game.round < 33}
                             <Button action={nextRound} label="Next Round" />
                         {:else}
@@ -102,7 +176,7 @@ import { afterUpdate } from "svelte";
                     <!-- balance -->
 
                     <div class="balance flex">
-                        <p>Balance: {derivedBalance}</p>
+                        <p>Balance: { derivedBalance }</p>
                     </div>
 
                     <!-- max spread -->
@@ -111,7 +185,7 @@ import { afterUpdate } from "svelte";
                         <p>{game.deck.held.length} Cards in Deck</p>
                     </div>
                 </div>
-                <TradeLedger />
+                <TradeLedger trades={trades} />
             {/if}
         </div>
 
@@ -121,8 +195,7 @@ import { afterUpdate } from "svelte";
     {#if showGameRound}
         <Backdrop zIndex={9999}>
             <div class="game-round-container flex">
-                <!-- <h1>Round {localGame.round}</h1> -->
-                <h1>Round 0</h1>
+                <h1>Round {game.round}</h1>
             </div>
         </Backdrop>
     {/if}
@@ -141,7 +214,7 @@ import { afterUpdate } from "svelte";
         left: 0;
         right: 0;
         bottom: 0;
-        padding-top: 60px;
+        padding-top: 30px;
     }
 
     .game-round-container {
@@ -183,21 +256,6 @@ import { afterUpdate } from "svelte";
         grid-template-rows: repeat(4, 85px);
         grid-gap: 10px;
         max-width: 1000px;
-    }
-
-    .game-output {
-        display: grid;
-        grid-template-columns: 100%;
-        grid-template-rows: 70px 70px calc(100% - 210px);
-        grid-gap: 10px;
-        height: calc(100vh - 10px);
-        overflow: hidden;
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding-top: 60px;
     }
 
     .max-spread {

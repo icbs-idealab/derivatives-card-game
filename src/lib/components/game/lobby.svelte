@@ -71,7 +71,7 @@
             getAndWatchLobby( newUserData.user_metadata.game_id )
 
             // with new data, can watch player lobby
-            getAndWatchPlayers( newUserData.user_metadata.game_id )
+            // getAndWatchPlayers( newUserData.user_metadata.game_id )
         }
     })
     

@@ -5,12 +5,20 @@
 
     export let selectCard: (card: string) => any = (card: string) => console.log('selecting card ', card)
     export let selectedCard: string = ''
-
+    export let localRole: string = ''
+    export let reveals: any = {}
     export let playerHand = {
         clubs: 0,
         diamonds: 0,
         hearts: 0,
         spades: 0,
+    }
+    
+    $:completedRevealRound = localRole && reveals[localRole] !== ""
+
+    export let processingCardSelection = false
+    export let revealCard = () => {
+        console.log('would reveal card')
     }
 
 </script>
@@ -27,7 +35,7 @@
                     <div class="card-wrapper flex" >
                         <div 
                             class="card-main flex" 
-                            on:click={() => selectCard(role)}
+                            on:click={() => !processingCardSelection && selectCard(role)}
                             data-selected={selectedCard === role}
                             data-exists={playerHand[role] !== 0}
                         >
@@ -43,8 +51,12 @@
             {/each}
         </div>
 
+        <!-- <div class="fixed" style="font-size: 0.7em; position: fixed; bottom: 30px; right: 30px; color: white!important;">
+            <pre>{reveals[localRole] || 'nothing revealed'}</pre>
+        </div> -->
+
         <div class="rv-reveal-control flex">
-            <!-- {#if !completedRevealRound}
+            {#if !completedRevealRound}
 
                 {#if selectedCard && processingCardSelection}
                     <div class="faux-button">
@@ -52,35 +64,38 @@
                     </div>
                 {:else}
                     <button 
-                        disabled={!selectedCard}
+                        disabled={!selectedCard || processingCardSelection}
                         on:click={revealCard}
-                    >Reveal Card</button>
+                    >
+                        Reveal Card
+                    </button>
                 {/if}
 
             {:else if localRole}
-                <p class="white" > You revealed {localReveals[localRole].reveals[localGame.round]} </p>
-            {/if} -->
+                <!-- <p class="white" > You revealed {localReveals[localRole].reveals[localGame.round]} </p> -->
+                <p class="white" > You revealed {reveals[localRole]} </p>
+            {/if}
         </div>  
 
         <div class="players-display">
             
-            <!-- {#each roleKeys as role}
+            {#each roleKeys as role}
                 <div 
                     class="rv-player-role flex jc-start" 
-                    data-revealed={localReveals[role].reveals && localReveals[role].reveals[localGame.round] !== ''}
+                    data-revealed={reveals[role] !== ""}
                     >
                     <div class="rv-player-icon flex">
-                        <SuitIcon suit={role} size={30} />
+                        <SuitIcon suit={role} size={20} />
                     </div>
                     <p class="rv-player-text">
                         { 
-                            localReveals[role].reveals && localReveals[role].reveals[localGame.round] ?
+                            reveals[role] ?
                                 'Has revealed their card'
                                 : 'is making a selection'
                         }
                     </p>
                 </div>
-            {/each} -->
+            {/each}
 
         </div>
         
@@ -179,6 +194,10 @@
 
     .card-count {
         font-size: 1.05em;
+        color: white!important;
+    }
+
+    .faux-button {
         color: white!important;
     }
 

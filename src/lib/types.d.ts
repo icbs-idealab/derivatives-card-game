@@ -150,6 +150,20 @@ export interface SuitHands {
     spades: SuitCount
 }
 
+export interface SuitReveals {
+    clubs: string
+    diamonds: string
+    hearts: string
+    spades: string
+}
+
+export interface SuitRevealsBool {
+    clubs: boolean
+    diamonds: boolean
+    hearts: boolean
+    spades: boolean
+}
+
 export interface SuitCount {
     clubs: number
     diamonds: number

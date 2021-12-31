@@ -1,4 +1,4 @@
-import type { AppGame, AppGamePlayer, AppGamePlayers, CardHand, PlayerRole, SupabaseUser, SuitName } from "./types";
+import type { AppGame, AppGamePlayer, AppGamePlayers, CardHand, PlayerRole, SupabaseUser, SuitName, SuitReveals, SuitRevealsBool } from "./types";
 // import { makePlayers } from "$lib/state";
 
 export const defaultUser: SupabaseUser = {
@@ -60,6 +60,20 @@ export const emptyHand: CardHand = {
     diamonds: 0,
     hearts: 0,
     spades: 0,
+}
+
+export const emptySuits: SuitReveals = {
+    clubs: "",
+    diamonds: "",
+    hearts: "",
+    spades: "",
+}
+
+export const emptySuitsBool: SuitRevealsBool = {
+    clubs: false,
+    diamonds: false,
+    hearts: false,
+    spades: false,
 }
 
 export const emptyReveals = {

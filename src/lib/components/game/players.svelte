@@ -1,14 +1,16 @@
 <div class="game-players flex">
     <div class="player-roles">
         <!-- <SuitIcon suit={suit} /> -->
-        {#each roleKeys as role}
-            <div class="player-role-icon flex fd-col">
-                <div class="suit-wrapper flex">
-                    <SuitIcon suit={role} />
+        {#if players}
+            {#each roleKeys as role}
+                <div class="player-role-icon flex jc-start">
+                    <div class="suit-wrapper flex">
+                        <SuitIcon suit={role} size={18} />
+                    </div>
+                    <p> {players[role].player_name || 'Unassigned'} </p>
                 </div>
-                <p> {$gamePlayers[role].player_name || 'Unassigned'} </p>
-            </div>
-        {/each}
+            {/each}
+        {/if}
     </div>
     <div class="player-speculators">
         <!-- <SuitIcon suit={suit} /> -->
@@ -21,39 +23,46 @@
     import SuitIcon from "$lib/components/suit/suit-icon.svelte";
     import type { AppGamePlayers } from "$lib/types";
     import { roleKeys, speculatorKeys } from "$lib/constants";
-    import { 
-        // defaultGamePlayers, 
-        gamePlayers 
-    } from "$lib/state";
-    // $:players = $gamePlayers
-    // players
+    import { makeGamePlayersAsObject } from "$lib/helpers";
+    export let players
 </script>
 
 <style>
     :root {
-        --size: 40px;
+        --size: 25px;
     }
     .game-players {
         width: auto;
         height: auto;
     }
 
+    .player-role-icon {
+        /* border: solid thin gray; */
+        background: lightgray;
+        border-radius: 15px;
+        /* padding-right: 5px; */
+        overflow: hidden;
+    }
+
     .player-roles {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, auto);
         grid-gap: 10px;
     }
 
     .suit-wrapper{
         height: var(--size);
-        width: var(--size);
-        border: solid thin;
+        /* width: var(--size); */
+        /* border: solid thin gray; */
+        /* background: gray; */
+        margin: 0 5px 0 15px;
+        padding-bottom: 2px;
         border-radius: var(--size);
     }
 
     p {
-        margin: 8px 0 0;
-        font-size: 0.6em;
+        margin: 0 15px 0 0px;
+        font-size: 0.7em;
         opacity: 0.5;
         font-weight: 100;
     }
