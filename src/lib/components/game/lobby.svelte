@@ -94,11 +94,12 @@
 
     gamePlayers.subscribe(newGamePlayers => {
         console.log('got new game players in <Lobby /> ', newGamePlayers)
-        let adminId = get(currentGame).admin.user_id
-        console.log('got admin: ', adminId)
+        
+        // let adminId = get(currentGame).admin.user_id
+        let adminId = ''
 
         for(let gamePlayer in newGamePlayers){
-            if(newGamePlayers[gamePlayer].user_id === adminId && adminId !== ""){
+            if(newGamePlayers[gamePlayer].is_admin){
                 adminRole = {
                     role: gamePlayer,
                     user_id: newGamePlayers[gamePlayer].user_id,
@@ -294,7 +295,8 @@
         left: -1px;
         right: 0;
         height: 18px;
-        width: 36px;
+        width: 42px;
+        display: inline-flex!important;
     }
 
     .pp-icon {

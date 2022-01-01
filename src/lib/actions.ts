@@ -3,7 +3,7 @@ import { get } from "svelte/store"
 import { allRoleNames, defaultGame, defaultUser, playerRevealRounds } from "./constants"
 import { buildShuffledDeck, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade } from "./state"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect } from "./state"
 import type { AppGamePlayers, NewGameProps, SupabaseUser } from "./types"
 import {nanoid} from 'nanoid'
 import { page } from "$app/stores"
@@ -68,13 +68,18 @@ export const getAuthenticatedUser = async () => {
 }
 
 export const updateUserMetadata = async (values: UserMetaDataValues) => {
+    console.log('updating user meta data: ', values)
     const {data, error} = await supabase.auth.update({
-        data: {
-            ...values
-        }
+        data: values
     })
 
-    return !error 
+    if(error){
+        console.log('error updating user metadata: ', error)
+    }
+    else if(data){
+        currentUser.set(data)
+    }
+    return data
 }
 
 export const requestAccess = async (email: string, message: string) => {
@@ -317,12 +322,16 @@ export async function joinLobby(game_id, player){
         return false
     })
     .then(async insertedPlayer => {
-        insertedPlayer && updateUserMetadata({game_id})
+        return insertedPlayer ? updateUserMetadata({game_id, player_name: player.player_name}) : false
     })
     .then(async res => {
-        console.log('joined lobby, updated player record. hide loading modal: ', res)
+        console.log('joined lobby, updated player record. redirect to game then refresh: ', res)
         redirect('/game')
-        setLoadingModal(false)
+        // setTimeout(() => {
+        //     reloadAfterRedirect.set(true)
+        // }, 1500)
+        // do not to stop showing loading modal as will be reloading page after redirect
+        // setLoadingModal(false)
     })
     .catch(err => {
         console.log('error joining lobby: ', err)
@@ -452,6 +461,7 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
 
 const viewCreatedGame = async (creationResults: any[]) => {
     let game = creationResults.filter(cr => cr.type === 'game')[0].data
+    reloadAfterRedirect.set(true)
     console.log('game: ', game)
     if(game){
         currentGame.set(parseGameData(game))
@@ -540,6 +550,7 @@ export const nextRound = async () => {
 }
 
 export async function getGame(game_id){
+    console.log('getting game id: ', game_id)
     let {data, error} = await supabase.from('games')
         .select('*')
         .eq('game_id', game_id)
@@ -555,6 +566,10 @@ export async function getGame(game_id){
 
     console.log('got game data: ', data)
 
+    // update game local object
+    if(data){
+        currentGame.update(current => data)
+    }
     return data
 }
 
@@ -580,8 +595,11 @@ export async function watchGame(game_id){
 }
 
 export async function getAndWatchGame(game_id){
+    console.log('getting and watching game: ', game_id)
     let game = await getGame(game_id)
-    if(game && !get(serverSubscriptions).game){
+    let subs = get(serverSubscriptions)
+    console.log('subs when attempting to subscribe to game: ', subs)
+    if(game && !subs.game){
         currentGame.set(parseGameData(game))
         await watchGame(game_id)
     }
@@ -611,9 +629,12 @@ export async function leaveGame(){
 
     let id = loggedIn.user().id
 
+    console.log('deleting lobby record for user with ID: ', id)
+
     await supabase
-        .from(`game-lobby:user_id=eq.${id}`)
+        .from(`game-lobby`)
         .delete()
+        .eq('user_id', id)
 
 
     setLoadingModal(false)
@@ -621,6 +642,10 @@ export async function leaveGame(){
     setTimeout(() => {
         redirect("/")
     })
+
+    setTimeout(() => {
+        reloadAfterRedirect.set(true)
+    }, 1500)
 }
 
 const publishTrade = async (trade) => {

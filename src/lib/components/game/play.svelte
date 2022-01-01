@@ -158,12 +158,14 @@
                     <!-- controls -->
 
                     <div class="game-controls flex">
-                        {#if !game.started && !game.ended && game.round === 0}
-                            <Button action={startGame} label="Start Game" disabled={!haveRequiredRoles} />
-                        {:else if game.started && !game.ended && game.round < 33}
-                            <Button action={nextRound} label="Next Round" />
-                        {:else}
-                            <Button action={endGame} label="Finish Game" />
+                        {#if playerRole && players && players[playerRole].is_admin}
+                            {#if !game.started && !game.ended && game.round === 0}
+                                <Button action={startGame} label="Start Game" disabled={!haveRequiredRoles} />
+                            {:else if game.started && !game.ended && game.round < 33}
+                                <Button action={nextRound} label="Next Round" />
+                            {:else}
+                                <Button action={endGame} label="Finish Game" />
+                            {/if}
                         {/if}
                     </div>
 

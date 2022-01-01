@@ -46,13 +46,16 @@
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { redirect } from "$lib/helpers";
-    import { currentGame, currentUser, serverSubscriptions, showLoadingModal } from "$lib/state";
+    import { currentGame, currentUser, reloadAfterRedirect, serverSubscriptions, showLoadingModal } from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
     import type { AppGame, SupabaseUser } from '$lib/types';
     import { defaultGame } from '$lib/constants';
+    import { get } from 'svelte/store';
+    import { browser } from '$app/env';
 
+    // let subs = get(serverSubscriptions)
     $:ui = 'light'
     let authChecked = false
     let activeUser: Partial<SupabaseUser>  = {
@@ -84,7 +87,8 @@
             
             if(userUpdate.id){
                 // userUpdate.user_metadata.game_id && watchGame(userUpdate.user_metadata.game_id)
-                !$serverSubscriptions.game && getAndWatchGame(userUpdate.user_metadata.game_id)
+                console.log( 'server subs: ', $serverSubscriptions.game )
+                userUpdate.user_metadata.game_id && !$serverSubscriptions.game && getAndWatchGame(userUpdate.user_metadata.game_id)
                 !sameData && (activeUser = userUpdate)
                 $page.path === "/" && userUpdate.user_metadata.game_id && redirect('/game')
             }
@@ -118,6 +122,13 @@
                 activeGame = {...defaultGame}
             }
         })
+
+        reloadAfterRedirect.subscribe(shouldReload => {
+            console.log('should reload: ', shouldReload)
+            if(shouldReload){
+                browser && location.reload()
+            }
+        })
     }
 
     onMount(() => {
@@ -125,7 +136,7 @@
     })
 
     afterUpdate(() => {
-        if(authChecked && !activeUser.id){
+        if(authChecked && !activeUser.id && $page.path !== '/'){
             redirect('/')
         }
     })

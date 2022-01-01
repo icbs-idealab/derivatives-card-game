@@ -138,3 +138,7 @@ export const localSubscriptions = writable({
     user: null,
     // local subs, different from postgres subs
 })
+
+
+// RELOAD PAGE
+export let reloadAfterRedirect = writable(false)

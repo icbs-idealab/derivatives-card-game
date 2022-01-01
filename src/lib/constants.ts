@@ -94,6 +94,7 @@ export const defaultGamePlayer: AppGamePlayer = {
     role: '',
     buy: 40,
     sell: 40,
+    is_admin: false,
 }
 
 export const roleKeys: SuitName[] = [

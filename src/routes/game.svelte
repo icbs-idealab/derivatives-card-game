@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getAndWatchPlayers, getAndWatchTrades, nextRound, setLoadingModal, startGame, updateGame } from "$lib/actions";
+    import { getAndWatchGame, getAndWatchPlayers, getAndWatchTrades, nextRound, setLoadingModal, startGame, updateGame } from "$lib/actions";
     import Lobby from "$lib/components/game/lobby.svelte";
     import Play from "$lib/components/game/play.svelte";
     import { emptyHand, emptyReveals, emptySuits, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
@@ -297,6 +297,9 @@
         console.log('current user on mount: ', currentPlayer)
         if(currentPlayer.id){
             getAndWatchPlayers(currentPlayer.user_metadata.game_id)
+            if(currentPlayer.user_metadata.game_id){
+                getAndWatchGame(currentPlayer.user_metadata.game_id)
+            }
         }
     })
 </script>

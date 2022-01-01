@@ -132,6 +132,7 @@ export interface AppGamePlayer {
     buy: number
     sell: number
     game_id: string
+    is_admin: boolean
 }
 
 export interface AppLobbyPlayer extends AppGamePlayer {

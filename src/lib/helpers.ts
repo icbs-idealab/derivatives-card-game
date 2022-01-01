@@ -1,7 +1,7 @@
 import { browser } from "$app/env";
 import { goto } from "$app/navigation";
 import { get } from "svelte/store";
-import { allRoleNames, defaultGamePlayer, emptyHand, emptyReveals, playerRevealRoundsArray } from "./constants";
+import { allRoleNames, defaultGamePlayer, emptyHand, emptyReveals, playerRevealRoundsArray, roleKeys } from "./constants";
 import { currentUser, gamePlayers } from "./state";
 import type { AppGamePlayer, AppGamePlayers, GameCard, Holder, SuitName } from "./types";
 
@@ -64,6 +64,7 @@ export function makeGamePlayers(params?): AppGamePlayers {
             game_id: gameId,
             user_id: role === adminRole ? adminId : "",
             player_name: role === adminRole ? adminName : "",
+            is_admin: role === adminRole ,
             hand: roleHands[role],
             revealed: {...emptyReveals},
             role,
@@ -89,7 +90,7 @@ function getRandomCard(hand){
 }
 
 function removeCardFromTop(deck){
-    return deck.splice(deck.length -1)[0]
+    return deck.splice(-1, 1)[0]
 }
 
 
@@ -120,11 +121,14 @@ export const buildShuffledDeck = () => {
     
     for(let i = 0; i<6; i++){
         // add one random card to each role
-        Object.keys(roleHands).forEach((roleKey: string) => {
+        roleKeys.forEach((roleKey: string) => {
             let rc = removeCardFromTop(hand)
+            console.log('removed card form top: ', rc)
             roleHands[roleKey][rc.suit] += 1
         })
     }
+
+    console.log('created deck with roleHands: ', roleHands)
 
 
     return {
