@@ -126,6 +126,16 @@ export const revealPlayerCard = async (newPlayerData, game_id, user_id) => {
     return {data, error, success: !error}
 }
 
+export const updatePlayerPrices = async (newPrices) => {
+    let game_id = get(currentGame).game_id
+    let user_id = get(currentUser).id
+
+    const {data, error} = await updatePlayer(newPrices, game_id, user_id)
+    data !== null && console.log('result of player price update: ', data)
+    error !== null && console.log('error updating player prices: ', error)
+    return {data, error, success: !error}
+}
+
 export const getPlayerData = async (game_id: string) => {
     console.log('getting player data for: ', game_id)    
     let {data, error} = await supabase.from('game-players')
@@ -350,6 +360,7 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
         game_id,
         admin: {
             user_id: user.id,
+            game_id,
             role: creatorRole,
             player_name: playerName
         },
@@ -376,87 +387,90 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
         gameId: game_id
     })
 
-    // console.log('made new deck: ', newGameDeck)
-    // console.log('made new player list: ', newPlayersRecord)
+    // console.log('made new players: ', newGamePlayers)
     // console.log('made new game: ', newGame)
-    
-    const makeGame =  new Promise( async (resolve, reject) => {
-        const {data, error} = await supabase.from('games')
-            .insert([
-                {...newGame}
-            ])
-            .select('game_id,admin,round,started,ended,completed,maximum_spread,deck')
-            .limit(1)
-            .single()
-        
-        console.log('result of making game: ', data)
-        console.log('errors in making game: ', error)
-        
-        let type = "game"
-            let res = data && data.length && data.length > 1 ?
-                data[0]
-                : data
 
-        !error ?
-            resolve({data: res, error: null, success: true, type})
-            : reject({error, data: null, success: false, type})
-    })
+    // if(false){
 
-    const updateCreatorRecord = new Promise( async (resolve, reject) => {
-        const {data, error} = await supabase.auth.update({
-            data: {
-                game_id,
-                admin: true,
-                player_name: playerName,
-                role: creatorRole
-            }
-        })
-
-        console.log('result of updating creator: ', data)
-        console.log('result of updating creator: ', error)
-
-        let type = "creator"
-
-        !error ? 
-            resolve({data, error: null, success: true, type})
-            : reject({data: null, error, success: false, type})
-    })
-
-    const makeNewPlayers = new Promise( async (resolve, reject) => {
-        const {data, error} = await supabase.from('game-players')
-            .insert(newGamePlayers)
-            .select('user_id,player_name,hand,revealed,role,buy,sell')
+        const makeGame =  new Promise( async (resolve, reject) => {
+            const {data, error} = await supabase.from('games')
+                .insert([
+                    {...newGame}
+                ])
+                .select('game_id,admin,round,started,ended,completed,maximum_spread,deck')
+                .limit(1)
+                .single()
             
-        console.log('result of making players: ', data)
-        console.log('errors while making players: ', error)
-
-        let type = "players"
-
-        !error ?
-            resolve({data: data, error: null, success: true, type})
-            : reject({error, data: null, success: false, type})
-    })
-
-    return Promise.all([
-            makeGame, 
-            updateCreatorRecord, 
-            makeNewPlayers, 
-        ])
-        .then(res => {
-            console.log('successfully handled all promises: ', res)
-            // redirect to game 
-            // return {res, game_id}
-            viewCreatedGame(res)
-            return game_id
+            console.log('result of making game: ', data)
+            console.log('errors in making game: ', error)
+            
+            let type = "game"
+                let res = data && data.length && data.length > 1 ?
+                    data[0]
+                    : data
+    
+            !error ?
+                resolve({data: res, error: null, success: true, type})
+                : reject({error, data: null, success: false, type})
         })
-        .catch(err => {
-            console.log('err creating new game: ', err)
-            return err
-            // log error in app
+    
+        const updateCreatorRecord = new Promise( async (resolve, reject) => {
+            const {data, error} = await supabase.auth.update({
+                data: {
+                    game_id,
+                    admin: true,
+                    player_name: playerName,
+                    role: creatorRole
+                }
+            })
+    
+            console.log('result of updating creator: ', data)
+            console.log('result of updating creator: ', error)
+    
+            let type = "creator"
+    
+            !error ? 
+                resolve({data, error: null, success: true, type})
+                : reject({data: null, error, success: false, type})
         })
-        .finally(() => {
-            setLoadingModal(false)
+    
+        const makeNewPlayers = new Promise( async (resolve, reject) => {
+            const {data, error} = await supabase.from('game-players')
+                .insert(newGamePlayers)
+                .select('user_id,player_name,hand,revealed,role,buy,sell')
+                
+            console.log('result of making players: ', data)
+            console.log('errors while making players: ', error)
+    
+            let type = "players"
+    
+            !error ?
+                resolve({data: data, error: null, success: true, type})
+                : reject({error, data: null, success: false, type})
         })
+    
+        return Promise.all([
+                makeGame, 
+                updateCreatorRecord, 
+                makeNewPlayers, 
+            ])
+            .then(res => {
+                console.log('successfully handled all promises: ', res)
+                // redirect to game 
+                // return {res, game_id}
+                viewCreatedGame(res)
+                return game_id
+            })
+            .catch(err => {
+                console.log('err creating new game: ', err)
+                return err
+                // log error in app
+            })
+            .finally(() => {
+                setLoadingModal(false)
+            })
+
+    // }
 }
 
 const viewCreatedGame = async (creationResults: any[]) => {
@@ -522,10 +536,74 @@ export async function updateGame(updateValue){
     }
 }
 
-export const startGame = async () => {
-    // assign player roles
-    let updateResult = await updateGame({started: true, round: 1})
+export const removeFromLobby = async (game_id) => {
+    const {data, error} = await supabase
+        .from('game-lobby')
+        .delete()
+        .eq("game_id", game_id)
+
+        if(error){
+            console.log('error removing players from lobby: ', error)
+        }
+
+        return {data, error, success: !error}
+}
+
+export const setFinalGameScores = async (final_scores) => {
+    // let game = get(currentGame)
+    let updateResult = await updateGame({final_scores, round: 33})
     return updateResult
+}
+
+export const startGame = async () => {
+    let game = get(currentGame)
+    let updateResult = await updateGame({started: true, round: 1})
+    let lobbyDeletion = await removeFromLobby(game.id)
+    return updateResult
+}
+
+export const deletePlayers = async (game_id: string) => {
+    return await supabase
+        .from('game-players')
+        .delete()
+        .eq("game_id", game_id)
+}
+
+export async function archiveGame(archiveData){
+    const {data, error} = await supabase
+        .from('archives')
+        .insert(archiveData)
+        .select("*")
+
+    if(error){
+        console.log('error archiving data: ', error)
+    }
+
+    return {data, error, success: !error}
+}
+
+export const endGame = async () => {
+    let game = get(currentGame)
+    
+    // archive
+    let gameData = await getGame(game.game_id)
+    let playerData = await getPlayerData(game.game_id)
+    let tradeData = await getTrades(game.game_id)
+
+    let archive = {
+        game: gameData,
+        players: playerData,
+        trades: tradeData,
+    }
+
+    let archiveResult = await archiveGame(archive)
+    let deletePlayersResult = await deletePlayers(game.id)
+    let updateResult = await updateGame({ended: true})
+    return {meta: updateResult, players: deletePlayersResult, archiveResult}
+}
+
+export const removeGameFromUserRecord = async () => {
+    updateUserMetadata({game_id: "", player_name: ""})
 }
 
 export const nextRound = async () => {

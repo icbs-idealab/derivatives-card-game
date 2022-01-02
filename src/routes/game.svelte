@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { getAndWatchGame, getAndWatchPlayers, getAndWatchTrades, nextRound, setLoadingModal, startGame, updateGame } from "$lib/actions";
+    import { endGame, getAndWatchGame, getAndWatchPlayers, getAndWatchTrades, nextRound, setFinalGameScores, setLoadingModal, startGame, updateGame } from "$lib/actions";
     import Lobby from "$lib/components/game/lobby.svelte";
     import Play from "$lib/components/game/play.svelte";
-    import { emptyHand, emptyReveals, emptySuits, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
+    import { allRoleNames, emptyHand, emptyReveals, emptySuits, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
     import { getRelevantTrades, makeGamePlayersAsObject } from "$lib/helpers";
     import { currentGame, currentUser, gamePlayers, gameTrades } from "$lib/state";
     import type { AppGame, SuitName, SuitReveals } from "$lib/types";
@@ -49,6 +49,11 @@
     // let lastRevealed = {...emptySuitsBool}
     $:lastRevealed = setLastRevealed(game.round, showRevealRound)
 
+    $:serverRates = {
+        buy: playerRole ? players[playerRole].buy : 42,
+        sell: playerRole ? players[playerRole].sell : 38,
+    }
+
     function setLastRevealed(round, revealRound){
         let newlyRevealed = {...emptySuitsBool}
         if(playerRevealRounds[round] && !revealRound){
@@ -72,7 +77,8 @@
         // lastRevealed = newlyRevealed
     }
 
-    function calculatePlayerInventory(_trades){
+    function calculatePlayerInventory(_trades, targetRole?){
+        let testRole = targetRole || playerRole
         let contracts = {...emptyHand}
         let balance = 0
         let tradeMultipliers = {
@@ -86,7 +92,7 @@
 
         _trades.map((trade) => {
             // contracts[trade.market] += tradeMultipliers[trade.type]
-            contracts[trade.market] += trade.market === playerRole ?
+            contracts[trade.market] += trade.market === testRole ?
                 // invert action since player loses contract to buying player and gains from seller
                 (tradeMultipliers[trade.type] * -1) 
                 // else add buys, subtract sales
@@ -94,7 +100,7 @@
 
             
             // balance += (balanceMultipliers[trade.type] * trade.price)
-            balance += trade.market === playerRole ?
+            balance += trade.market === testRole ?
                 // player gains money from trades with type buy if of the same market as they are being 'sold' to the player
                 (balanceMultipliers[trade.type] * -1) * trade.price
                 // else affect is inverted
@@ -102,6 +108,11 @@
         })
 
         return {contracts, balance}
+    }
+
+    // admin only
+    function calculateAllInventories(){
+
     }
 
     function checkRequiredRoles(players){
@@ -235,6 +246,53 @@
         }
     }
 
+    function finishGame(){
+        let lastRevealed = game.deck.revealed[game.deck.revealed.length -1]
+        console.log('last revealed: ', lastRevealed)
+
+        // calc player scores
+        let fPlayers = get(gamePlayers)
+        let playerResults: {[index: string]: {balance: number, final: number, contracts: any}} = {}
+
+        // allRoleNames.forEach(roleName => {
+        //     playerResults[roleName] =
+        // })
+
+        let allTrades = get(gameTrades)
+        for(let player in fPlayers){
+            let targetPlayer = fPlayers[player]
+
+            let relevant = getRelevantTrades(allTrades, targetPlayer.user_id, targetPlayer.role)
+            console.log('relevant trades for player: ', relevant)
+            let inventory = calculatePlayerInventory(relevant, targetPlayer.role)
+
+            playerResults[player] = {
+                balance: inventory.balance,
+                contracts: inventory.contracts,
+                final: inventory.balance + (inventory.contracts[lastRevealed] * 100)
+            }
+
+
+            console.table({
+                role: player,
+                ...playerResults[player]
+                // balance: inventory.balance,
+                // final: inventory.balance,
+                // contracts: inventory.contracts,
+            })          
+
+        }
+        // add final scores to game data column
+        setLoadingModal(true)
+        setFinalGameScores(playerResults)
+        .catch(err => {
+            console.log('error setting final game scores: ', err)
+        })
+        .finally(() => {
+            setLoadingModal(false)
+        })
+    }
+
     currentGame.subscribe(newGame => {
         if(checkGameDataDiff(newGame)){
             game 
@@ -244,6 +302,12 @@
                 && triggerGameRoundDisplay()
 
             game = newGame
+            if(playerRevealRounds[newGame.round]){
+                revealRoundState = getReveals(players)
+                setTimeout(() => {
+                    showRevealRound = playerRevealRounds[game.round] && !hasAll(revealRoundState)
+                })
+            }
         }
 
         exists = newGame.game_id !== ""
@@ -291,6 +355,9 @@
             watchTradesInServer()
             // watchTradesLocal()
         }
+        // if(playerRole && players[playerRole] && players[playerRole].user_id){
+        //     // check players' rates
+        // }
     })
 
     onMount(() => {
@@ -323,6 +390,7 @@
                 playerRole={playerRole}
                 revealed={revealed}
                 startGame={start}
+                finishGame={finishGame}
                 revealsForRound={revealRoundState}
                 nextRound={goToNextRound}
                 lastRevealed={lastRevealed}

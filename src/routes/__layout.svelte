@@ -27,11 +27,16 @@
         <AppMenu 
             hasGame={activeUser.user_metadata.game_id}
             isAuthenticated={activeUser.id !== null}
+            isAdmin={activeUser.user_metadata.admin}
         />
     {/if}
 
     {#if $showLoadingModal}
         <LoadingModal />
+    {/if}
+
+    {#if $showEndGameModal}
+        <EndGameModal />
     {/if}
 </main>
 
@@ -42,11 +47,11 @@
     import '@fontsource/public-sans/300.css';
     import '@fontsource/public-sans/400.css';
     import '@fontsource/public-sans/600.css';
-    import { getAndWatchGame, getAuthenticatedUser } from "$lib/actions";
+    import { getAndWatchGame, getAuthenticatedUser, removeGameFromUserRecord, setLoadingModal } from "$lib/actions";
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { redirect } from "$lib/helpers";
-    import { currentGame, currentUser, reloadAfterRedirect, serverSubscriptions, showLoadingModal } from "$lib/state";
+    import { currentGame, currentUser, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showLoadingModal } from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
@@ -54,6 +59,8 @@
     import { defaultGame } from '$lib/constants';
     import { get } from 'svelte/store';
     import { browser } from '$app/env';
+    import Backdrop from '$lib/components/app/backdrop.svelte';
+    import EndGameModal from '$lib/components/app/end-game-modal.svelte';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'
@@ -69,6 +76,16 @@
 
     let activeGame: Partial<AppGame> = {...defaultGame}
     let watchingGame = null
+
+    function removeFromRecord(){
+        setLoadingModal(true)
+            removeGameFromUserRecord()
+            .catch(err => console.log('error removing game data from user record: ', err))
+            .finally(() => {
+                redirect('/')
+                setLoadingModal(false)
+            })
+    }
 
     function watch(){
         currentUser.subscribe( async userUpdate => {
@@ -113,12 +130,18 @@
                 ){
                     console.log('_layout:: udpating layouts local game: ', game)
                     activeGame = {...game}
+                    if(game.ended){
+                        removeFromRecord()
+                    }
                 }
                 else{
                     console.log('got new game data but was identical to local data. will not update')
                 }
             }
             else {
+                if(game.ended){
+                    removeFromRecord()
+                }
                 activeGame = {...defaultGame}
             }
         })

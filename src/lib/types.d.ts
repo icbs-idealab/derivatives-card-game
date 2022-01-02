@@ -70,6 +70,7 @@ export interface AppGame {
     completed: boolean
     maximum_spread: number
     deck: GameDeck
+    final_scores?: any
     
     // trade rates
     // clubs_rate: {

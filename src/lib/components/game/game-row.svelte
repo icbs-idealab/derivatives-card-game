@@ -7,7 +7,8 @@
     import { defaultGamePlayer, emptyHand, suits } from "$lib/constants";
     import BuySellControls from "./buy-sell-controls.svelte";
     import ActivePlayerControls from "./active-player-controls.svelte";
-    import { canTrade } from "$lib/state";
+    import { canTrade, canUpdatePrice } from "$lib/state";
+    import { updatePlayerPrices } from "$lib/actions";
     
     export let isLastRevealed: boolean = false
     export let isActivePlayer = false
@@ -30,8 +31,30 @@
         localRates[type] = value
     }
 
-    function saveNewPrices(value, type){
-        console.log('would update value in backend: ', value, type)
+    function saveNewPrices(){
+        console.log('would update value in backend')
+        // new pricesf
+        let priceUpdate = {
+            buy,
+            sell,
+        }
+
+        canUpdatePrice.set(false)
+
+        updatePlayerPrices(priceUpdate)
+        .then(result => {
+            console.log('successfully updated price: ', result)
+        })
+        .catch(error => {
+            console.log('error updating price: ', error)
+        })
+        .finally(() => {
+            console.log('finished updating price')
+            setTimeout(() => {
+                canUpdatePrice.set(true)
+            }, 500)
+        })
+
     }
 
     let maxSpreadWarning = ''

@@ -1,4 +1,7 @@
 <script lang="ts">
+import { afterUpdate } from "svelte";
+
+
     export let localBuy: number = 0
     export let localSell: number = 0
     export let gameBuy: number = 0
@@ -21,8 +24,18 @@
     $:buyValue = localBuy !== null ? localBuy : gameBuy
     $:isDiff = () => sellValue !== buyValue
     $:diffValue = () => Math.abs(sellValue - buyValue)
-    $:canTrade = isDiff() && diffValue() < maxSpread
+    $:canTrade = isDiff() && diffValue() <= maxSpread
 
+    afterUpdate(() => {
+        console.table({
+            title: 'diff',
+            'Buy value': buyValue,
+            'Sell value': sellValue,
+            difference: diffValue(),
+            'is different': isDiff(),
+            'can trade': canTrade,
+        })
+    })
     // afterUpdate(() => {
     //     console.table({
     //         isDiff: isDiff(),

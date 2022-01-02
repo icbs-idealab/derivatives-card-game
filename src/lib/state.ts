@@ -110,10 +110,13 @@ export const canTrade = writable({
     spades: true,
 })
 
+export let canUpdatePrice = writable(false)
+
 // LOADING / MODAL
 
 export const showLoadingModal = writable(false)
 export const showGameRules = writable(false)
+export const showEndGameModal = writable(false)
 
 // SUBSCRIPTIONS
 

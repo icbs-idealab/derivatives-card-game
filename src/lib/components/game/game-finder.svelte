@@ -75,6 +75,7 @@
                 playerName={playerName}
                 updatePlayerName={updatePlayerName}
                 updateMaximumSpread={updateMaximumSpread}
+                maximumSpread={maximumSpread}
             />
         {/if}
     </TabConent>

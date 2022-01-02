@@ -1,13 +1,25 @@
 <script lang="ts">
-    import { displayErrorReporter, displayRules, leaveGame, singOut } from "$lib/actions";
-    import { showGameRules } from "$lib/state";
+    import { displayErrorReporter, displayRules, endGame, leaveGame, setLoadingModal, singOut } from "$lib/actions";
+    import { currentGame, showEndGameModal, showGameRules } from "$lib/state";
     import AppMenuItem from "./app-menu-item.svelte";
 
     export let hasGame: boolean = false
     export let isAuthenticated: boolean = false
+    export let isAdmin: boolean = false
 
-    function leave(){
-        leaveGame()
+    function end(){
+        console.log('would end game')
+        showEndGameModal.set(true)
+        // endGame()
+        // .then(result => {
+        //     console.log('result of ending game: ', result)
+        // })
+        // .catch(error => {
+        //     console.log('error ending game: ', error)
+        // })
+        // .finally(() => {
+        //     setLoadingModal(false)
+        // })
     }
 
     $:items = [
@@ -48,6 +60,17 @@
             </li>
         {/if}
     {/each}
+
+    {#if isAdmin && $currentGame.game_id}
+        <li class="end-game-button">
+            <AppMenuItem
+                color="var(--lm-lighter)"
+                icon="handStop"
+                label="End Game"
+                action={end}
+            />
+        </li>
+    {/if}
 </ul>
 
 <style>
@@ -65,5 +88,11 @@
     li {
         cursor: pointer;
         margin-right: 15px;
+    }
+
+    li.end-game-button {
+        padding: 6px 12px;
+        background: var(--red);
+        border-radius: 6px;
     }
 </style>

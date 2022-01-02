@@ -1,7 +1,7 @@
 <script lang="ts">
     import { revealPlayerCard } from "$lib/actions";
     import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
-    import { makeGamePlayersAsObject } from "$lib/helpers";
+    import { findGamePlayerById, makeGamePlayersAsObject } from "$lib/helpers";
     import type { AppGame } from "$lib/types";
     import { afterUpdate } from "svelte";
     import Backdrop from "../app/backdrop.svelte";
@@ -31,34 +31,57 @@
         spades: "",
     }
     export let startGame: () => any = () => console.log('init')
-    export let endGame: () => any = () => console.log('end game')
+    export let finishGame: () => any = () => console.log('end game')
     export let nextRound: () => any = () => console.log('next round')
     
     function withSymbol(val){
         let symbol = val < 0 ? '-' : ''
+        console.log()
         return `${symbol}$${Math.abs(val/100)}`
     }
 
-    $:derivedBalance = withSymbol(balance)
-    
-    function calcHand(cards, revealed){
-        let h = {...cards}
-        // console.log('$H: ', h)
-        // console.log('$H2: ', revealed)
-        for(let revealRound in revealed){
-            let card = revealed[revealRound]
-            // console.log('$card: ', card)
-            if(card){
-                h[card] -= 1
-            }
-        }
 
-        return h
+    $:derivedBalance = withSymbol(balance)
+    $:derivedFinalBalance = playerRole && game && game.final_scores ? withSymbol(game.final_scores[playerRole].final) : ''
+    
+    // function calcHand(cards, revealed){
+    //     let h = {...cards}
+    //     // console.log('$H: ', h)
+    //     // console.log('$H2: ', revealed)
+    //     for(let revealRound in revealed){
+    //         let card = revealed[revealRound]
+    //         // console.log('$card: ', card)
+    //         if(card){
+    //             h[card] -= 1
+    //         }
+    //     }
+
+    //     return h
+    // }
+
+    function calcHand(players, playerRole){
+        if(playerRole){
+            let p = players[playerRole]
+            let h = {...p.hand}
+            let r = p.revealed
+            // console.log('$H: ', h)
+            // console.log('$H2: ', revealed)
+            for(let revealRound in r){
+                let card = r[revealRound]
+                // console.log('$card: ', card)
+                if(card){
+                    h[card] -= 1
+                }
+            }
+    
+            return h
+        }
     }
 
     $:playerCards = playerRole ? players[playerRole].hand : emptyHand
     $:playerReveals = playerRole ? players[playerRole].revealed : emptyReveals
-    $:hand = calcHand(playerCards, playerReveals)
+    // $:hand = calcHand(playerCards, playerReveals)
+    $:hand = calcHand(players, playerRole)
 
     let processingCardSelection = false
     let selectedCard = ''
@@ -91,25 +114,22 @@
         }
     }
 
-    let localRates = {
+    export let localRates = {
         buy: 36,
         sell: 40,
     }
 
+    // export let serverRates = {
+    //     buy: 42,
+    //     sell: 38,
+    // }
+    
     let canTrade = {
         clubs: true,
         diamonds: true,
         hearts: true,
         spades: true,
-    }
-
-    function processTrade(suit, type){
-        console.log('processing trade in play.svelte')
-        canTrade[suit] = false
-        setTimeout(() => {
-            canTrade[suit] = true
-        }, 3000)
-    }
+    }    
 </script>
 
 <section id="game">
@@ -148,10 +168,11 @@
                             roleData={players[role]}
                             localRates={localRates}
                             suit={role}
-                            playerCards={hand}
+                            playerCards={playerCards}
                             contracts={contracts[role]}
                             revealed={revealed[role]}
                             isLastRevealed={lastRevealed[role]}
+                            maxSpread={game.maximum_spread}
                         />
                     {/each}
 
@@ -161,10 +182,10 @@
                         {#if playerRole && players && players[playerRole].is_admin}
                             {#if !game.started && !game.ended && game.round === 0}
                                 <Button action={startGame} label="Start Game" disabled={!haveRequiredRoles} />
-                            {:else if game.started && !game.ended && game.round < 33}
+                            {:else if game.started && !game.ended && game.round < 32}
                                 <Button action={nextRound} label="Next Round" />
                             {:else}
-                                <Button action={endGame} label="Finish Game" />
+                                <Button action={finishGame} label="Finish Game" />
                             {/if}
                         {/if}
                     </div>
@@ -177,8 +198,11 @@
 
                     <!-- balance -->
 
-                    <div class="balance flex">
+                    <div class="balance flex fd-col">
                         <p>Balance: { derivedBalance }</p>
+                        {#if game.final_scores}
+                            <p>Final Balance: { derivedFinalBalance }</p>
+                        {/if}
                     </div>
 
                     <!-- max spread -->

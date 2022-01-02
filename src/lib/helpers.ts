@@ -123,8 +123,8 @@ export const buildShuffledDeck = () => {
         // add one random card to each role
         roleKeys.forEach((roleKey: string) => {
             let rc = removeCardFromTop(hand)
-            console.log('removed card form top: ', rc)
-            roleHands[roleKey][rc.suit] += 1
+            roleHands[roleKey][rc] += 1
+            console.log('removed card form top: ', rc, ' and added to: ', roleKey)
         })
     }
 

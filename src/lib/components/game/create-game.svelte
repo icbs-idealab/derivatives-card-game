@@ -10,7 +10,7 @@
     import { browser } from "$app/env";
     import { goto } from "$app/navigation";
     import { currentUser } from "$lib/state";
-import { get } from "svelte/store";
+    import { get } from "svelte/store";
     export let playerName: string = ''
     // export let gameId: string = ''
     export let maximumSpread: number = 4
@@ -50,7 +50,8 @@ import { get } from "svelte/store";
             playerName
         })
         .then(() => {
-            browser && goto('/game')
+            browser && goto('/game') && location.reload()
+            // browser && location.reload()
         })
         .catch(error => {
             console.log('error creating new game: ', error)

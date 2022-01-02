@@ -37,22 +37,6 @@ export const defaultGame: AppGame = {
         held: [],
         revealed: [],
     }
-    // clubs_rate: {
-    //     buy: 40,
-    //     sell: 36,
-    // },
-    // diamonds_rate: {
-    //     buy: 40,
-    //     sell: 36,
-    // },
-    // hearts_rate: {
-    //     buy: 40,
-    //     sell: 36,
-    // },
-    // spades_rate: {
-    //     buy: 40,
-    //     sell: 36,
-    // },
 }
 
 export const emptyHand: CardHand = {
