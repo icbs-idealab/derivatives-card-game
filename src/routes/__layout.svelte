@@ -31,8 +31,12 @@
         />
     {/if}
 
-    {#if $showLoadingModal}
-        <LoadingModal />
+    {#if $showGameRules}
+        <AppRules />
+    {/if}
+
+    {#if $showEndGameModal}
+        <EndGameModal />
     {/if}
 
     {#if $showEndGameModal}
@@ -51,7 +55,7 @@
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { redirect } from "$lib/helpers";
-    import { currentGame, currentUser, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showLoadingModal } from "$lib/state";
+    import { currentGame, currentUser, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal } from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
@@ -61,6 +65,7 @@
     import { browser } from '$app/env';
     import Backdrop from '$lib/components/app/backdrop.svelte';
     import EndGameModal from '$lib/components/app/end-game-modal.svelte';
+import AppRules from '$lib/components/app/app-rules.svelte';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'

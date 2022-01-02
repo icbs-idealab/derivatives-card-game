@@ -1,9 +1,8 @@
 <script lang="ts">
     import { revealPlayerCard } from "$lib/actions";
     import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
-    import { findGamePlayerById, makeGamePlayersAsObject } from "$lib/helpers";
+    import { makeGamePlayersAsObject } from "$lib/helpers";
     import type { AppGame } from "$lib/types";
-    import { afterUpdate } from "svelte";
     import Backdrop from "../app/backdrop.svelte";
     import Button from "../button/button.svelte";
     import GameProperties from "./game-properties.svelte";
@@ -142,12 +141,12 @@
 
         <!-- game main -->
 
-        <div class="div flex" style="position:fixed; bottom: 50px; right: 50px; font-size: 0.65em;">
+        <!-- <div class="div flex" style="position:fixed; bottom: 50px; right: 50px; font-size: 0.65em;"> -->
             <!-- Player role {playerRole} -->
             <!-- <pre style="font-size: 0.7em;"> {JSON.stringify(playerCards)} </pre> -->
-            <pre> {JSON.stringify(hand)} </pre>
             <!-- <pre> {JSON.stringify(hand)} </pre> -->
-        </div>
+            <!-- <pre> {JSON.stringify(hand)} </pre> -->
+        <!-- </div> -->
 
         <div class="game-interactive">
             {#if showRevealRound}
@@ -184,8 +183,12 @@
                                 <Button action={startGame} label="Start Game" disabled={!haveRequiredRoles} />
                             {:else if game.started && !game.ended && game.round < 32}
                                 <Button action={nextRound} label="Next Round" />
-                            {:else}
+                            {:else if game.round === 33 && !game.final_scores}
                                 <Button action={finishGame} label="Finish Game" />
+                            {:else}
+                                <div class="game-completed">
+                                    Game Completed
+                                </div>
                             {/if}
                         {/if}
                     </div>
@@ -228,6 +231,14 @@
 </section>
 
 <style>
+
+    .game-completed {
+        font-size: 0.85em;
+        border: solid thin lightgray;
+        padding: 10px 15px;
+        border-radius: 3px;
+    }
+
     .game-output {
         display: grid;
         grid-template-columns: 100%;

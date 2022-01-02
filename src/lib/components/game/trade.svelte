@@ -1,13 +1,14 @@
 <script lang="ts">
     import SuitIcon from "$lib/components/suit/suit-icon.svelte";
-    export let market: string = 'clubs'
+    import type { SuitName } from "$lib/types";
+    export let market: SuitName = 'clubs'
     export let type: string = 'buy'
     export let price: number = 0.43
 </script>
 
 <div class="trade">
     <div class="market flex">
-        <SuitIcon />
+        <SuitIcon suit={market} />
     </div>
     <div class="market-name flex jc-start">
         <p>{market}</p>

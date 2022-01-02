@@ -38,7 +38,7 @@
         {
             label: 'View Rules',
             icon: 'info',
-            action: () => displayRules(true),
+            action: () => showGameRules.set(true),
         },
         {
             label: 'Report Issue',
