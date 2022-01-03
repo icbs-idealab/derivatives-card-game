@@ -220,21 +220,17 @@
             })
     }
 
-    let goingToNextRound = false
-
-    function goToNextRound(){
-        if(!goingToNextRound){
-            let goingToNextRound = true
-            setLoadingModal(true)
-            // updateGame({round: game.round + 1})
-            nextRound()
-            .catch(err => {
-                console.log('err loading: ', err)
-            })
-            .finally(() => {
-                setLoadingModal(false)
-            })
-        }
+    async function goToNextRound(){
+        setLoadingModal(true)
+        // updateGame({round: game.round + 1})
+        return nextRound()
+        .catch(err => {
+            console.log('err loading: ', err)
+        })
+        .finally(() => {
+            setLoadingModal(false)
+            return true
+        })
     }
 
     function triggerGameRoundDisplay(){
@@ -246,17 +242,13 @@
         }
     }
 
-    function finishGame(){
-        let lastRevealed = game.deck.revealed[game.deck.revealed.length -1]
+    async function finalAction(_game){
+        let lastRevealed = _game.deck.revealed[_game.deck.revealed.length -1]
         console.log('last revealed: ', lastRevealed)
 
         // calc player scores
         let fPlayers = get(gamePlayers)
         let playerResults: {[index: string]: {balance: number, final: number, contracts: any}} = {}
-
-        // allRoleNames.forEach(roleName => {
-        //     playerResults[roleName] =
-        // })
 
         let allTrades = get(gameTrades)
         for(let player in fPlayers){
@@ -276,14 +268,11 @@
             console.table({
                 role: player,
                 ...playerResults[player]
-                // balance: inventory.balance,
-                // final: inventory.balance,
-                // contracts: inventory.contracts,
             })          
 
         }
         // add final scores to game data column
-        setLoadingModal(true)
+        // setLoadingModal(true)
         setFinalGameScores(playerResults)
         .catch(err => {
             console.log('error setting final game scores: ', err)
@@ -291,6 +280,20 @@
         .finally(() => {
             setLoadingModal(false)
         })
+    }
+
+    async function finishGame(){
+        setLoadingModal(true)
+        
+        let {data, error} = await nextRound(true)
+
+        console.log('$$$: end: ', data)
+        console.log('$$$: end: ', error)
+
+        if(data && Array.isArray(data)){
+            finalAction(data[0])
+        }
+        // setLoadingModal(false)
     }
 
     currentGame.subscribe(newGame => {

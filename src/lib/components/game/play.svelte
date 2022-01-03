@@ -183,12 +183,14 @@
                                 <Button action={startGame} label="Start Game" disabled={!haveRequiredRoles} />
                             {:else if game.started && !game.ended && game.round < 32}
                                 <Button action={nextRound} label="Next Round" />
-                            {:else if game.round === 33 && !game.final_scores}
-                                <Button action={finishGame} label="Finish Game" />
-                            {:else}
+                            {:else if game.round === 32 }
+                                <Button action={nextRound} label="Final Round" />
+                            {:else if game.ended}
                                 <div class="game-completed">
                                     Game Completed
                                 </div>
+                            {:else}
+                                <Button action={finishGame} label="Finish Game" />
                             {/if}
                         {/if}
                     </div>

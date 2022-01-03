@@ -551,7 +551,7 @@ export const removeFromLobby = async (game_id) => {
 
 export const setFinalGameScores = async (final_scores) => {
     // let game = get(currentGame)
-    let updateResult = await updateGame({final_scores, round: 33})
+    let updateResult = await updateGame({final_scores, ended: true, completed: true})
     return updateResult
 }
 
@@ -565,6 +565,13 @@ export const startGame = async () => {
 export const deletePlayers = async (game_id: string) => {
     return await supabase
         .from('game-players')
+        .delete()
+        .eq("game_id", game_id)
+}
+
+export const deleteTrades = async (game_id: string) => {
+    return await supabase
+        .from('game-trades')
         .delete()
         .eq("game_id", game_id)
 }
@@ -583,10 +590,11 @@ export async function archiveGame(archiveData){
 }
 
 export const endGame = async () => {
+    setLoadingModal(true)
     let game = get(currentGame)
     
     // archive
-    let gameData = await getGame(game.game_id)
+    let {data: gameData} = await getGame(game.game_id)
     let playerData = await getPlayerData(game.game_id)
     let tradeData = await getTrades(game.game_id)
 
@@ -598,7 +606,11 @@ export const endGame = async () => {
 
     let archiveResult = await archiveGame(archive)
     let deletePlayersResult = await deletePlayers(game.id)
+    let deleteTradesResult = await deleteTrades(game.id)
     let updateResult = await updateGame({ended: true})
+    setTimeout(() => {
+        setLoadingModal(false)
+    }, 1000)
     return {meta: updateResult, players: deletePlayersResult, archiveResult}
 }
 
@@ -606,25 +618,35 @@ export const removeGameFromUserRecord = async () => {
     updateUserMetadata({game_id: "", player_name: ""})
 }
 
-export const nextRound = async () => {
-    let {round, deck} = get(currentGame)
-    let next = round + 1
-    console.log('$$ next round')
-    console.log('$$ is next round a player reveal? ', playerRevealRounds[next])
-    let update: {deck?: any, round: number} = {
-        round: next
-    }
+export const nextRound = async (ignoreIncrement?: boolean) => {
+    let {game_id} = get(currentGame)
+    let {data: uptoDateValues} = await getGame(game_id)
     
-    if(  !playerRevealRounds[next] ){
-        let newDeck = {...deck}
-        let card = newDeck.held.shift()
-        newDeck.revealed.push(card)
-        update.deck = newDeck
-        console.log('$$ new deck: ', newDeck)
+    let {round, deck} = uptoDateValues
+    
+    if(round && deck){
+        console.log('ignoring increment')
+        let next = round + (ignoreIncrement ? 0 : 1)
+        console.log('$$ next round: ', next)
+        console.log('$$ is next round a player reveal? ', playerRevealRounds[next])
+        let update: {deck?: any, round: number} = {
+            round: next
+        }
+        
+        if(  !playerRevealRounds[next] ){
+            let newDeck = {...deck}
+            let card = newDeck.held.shift()
+            newDeck.revealed.push(card)
+            update.deck = newDeck
+            console.log('$$ new deck: ', newDeck)
+        }
+    
+        let updateResult = await updateGame(update)
+        return updateResult
     }
-
-    let updateResult = await updateGame({round: round + 1, deck})
-    return updateResult
+    else{
+        console.log('error updating game round with remote data: ', )
+    }
 }
 
 export async function getGame(game_id){
@@ -639,7 +661,7 @@ export async function getGame(game_id){
         // set application wide error notifications here
         console.log('error getting game ', game_id)
         console.error(error)
-        return null
+        // return null
     }
 
     console.log('got game data: ', data)
@@ -648,7 +670,8 @@ export async function getGame(game_id){
     if(data){
         currentGame.update(current => data)
     }
-    return data
+
+    return {data, error}
 }
 
 export async function watchGame(game_id){
@@ -674,7 +697,7 @@ export async function watchGame(game_id){
 
 export async function getAndWatchGame(game_id){
     console.log('getting and watching game: ', game_id)
-    let game = await getGame(game_id)
+    let {data: game} = await getGame(game_id)
     let subs = get(serverSubscriptions)
     console.log('subs when attempting to subscribe to game: ', subs)
     if(game && !subs.game){

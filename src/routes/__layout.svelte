@@ -39,8 +39,8 @@
         <EndGameModal />
     {/if}
 
-    {#if $showEndGameModal}
-        <EndGameModal />
+    {#if $showLoadingModal}
+        <LoadingModal />
     {/if}
 </main>
 
@@ -135,9 +135,9 @@ import AppRules from '$lib/components/app/app-rules.svelte';
                 ){
                     console.log('_layout:: udpating layouts local game: ', game)
                     activeGame = {...game}
-                    if(game.ended){
-                        removeFromRecord()
-                    }
+                    // if(game.ended){
+                    //     removeFromRecord()
+                    // }
                 }
                 else{
                     console.log('got new game data but was identical to local data. will not update')
