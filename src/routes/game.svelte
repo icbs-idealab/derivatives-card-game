@@ -423,14 +423,14 @@
             </div>
         </div>
     {:else}
-        <ul class="lobby-details">
+        <!-- <ul class="lobby-details">
             <li>waiting for game data</li>
             <li>exists: {exists}</li>
             <li>game id: {$currentGame.game_id}</li>
             <li>Required Roles: {haveRequiredRoles}</li>
             <li>Playable: {playable}</li>
             <li>In Lobby: {inLobby}</li>
-        </ul>
+        </ul> -->
 
         <div class="loading-lobby flex">
             <div class="loading-lobby-inner flex fd-col">
