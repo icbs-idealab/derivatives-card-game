@@ -1,0 +1,238 @@
+main[data-ui-mode="light"] {
+    color: var(--dm-darker);
+    background: var(--lm-backdrop);
+}
+
+main[data-ui-mode="dark"] {
+    color: var(--dm-white);
+    background: var(--dm-black)
+}
+
+[data-ui-mode="dark"] .button-content,
+[data-ui-mode="dark"] input,
+[data-ui-mode="dark"] textarea,
+[data-ui-mode="dark"] p,
+[data-ui-mode="dark"] i,
+[data-ui-mode="dark"] h1,
+[data-ui-mode="dark"] h2,
+[data-ui-mode="dark"] h3,
+[data-ui-mode="dark"] h4,
+[data-ui-mode="dark"] ul,
+[data-ui-mode="dark"] li
+{
+    color: inherit!important;
+}
+
+[data-ui-mode="light"] .button-content,
+[data-ui-mode="light"] input,
+[data-ui-mode="dark"] textarea,
+[data-ui-mode="light"] p,
+[data-ui-mode="light"] i,
+[data-ui-mode="light"] h1,
+[data-ui-mode="light"] h2,
+[data-ui-mode="light"] h3,
+[data-ui-mode="light"] h4,
+[data-ui-mode="light"] ul,
+[data-ui-mode="light"] li
+{
+    color: inherit!important;
+}
+
+/* markets */
+
+[data-ui-mode="light"] .market-selector {
+    border-color: lightgray!important;
+}
+
+[data-ui-mode="dark"] .market-selector {
+    /* border-color: var(--dm-lighter)!important; */
+    border-color: var(--dm-lighter)!important;
+}
+
+[data-ui-mode="light"] .market-selector:hover {
+    background-color: rgba(240, 240, 240, 0.5)!important;
+    /* background: var(--dm-light); */
+    /* color: white; */
+}
+
+[data-ui-mode="dark"] .market-selector:hover {
+    background-color: rgba(40, 40, 40, 0.5)!important;
+}
+
+/* app menu */
+
+[data-ui-mode="light"] .app-menu .toggle {
+    background: var(--lm-lighter);
+}
+
+[data-ui-mode="light"] .app-menu .menu {
+    background: var(--lm-light);
+}
+
+[data-ui-mode="light"] .app-menu .menu-items {
+    background: white;
+}
+
+[data-ui-mode="dark"] .app-menu .toggle {
+    background: var(--dm-mid);
+}
+
+[data-ui-mode="dark"] .app-menu .menu {
+    background: var(--dm-dark);
+}
+
+[data-ui-mode="dark"] .app-menu .menu-items {
+    background: var(--dm-light);
+}
+
+[data-ui-mode="dark"] .menu-item:hover {
+    background: rgba(250, 250, 250, 0.1)!important;
+}
+
+[data-ui-mode="light"] .menu-item:hover {
+    background: rgba(20, 20, 20, 0.1)!important;
+}
+
+/* container */
+
+[data-ui-mode="light"] .container {
+    background: var(--lm-lighter);
+}
+
+[data-ui-mode="dark"] .container {
+    background: var(--dm-dark);
+}
+
+/* game graphic */
+
+[data-ui-mode="dark"] .game-graphic {
+    background: black;
+}
+
+[data-ui-mode="light"] .game-graphic {
+    background: white;
+}
+
+/* inputs */
+
+[data-ui-mode="dark"] .input,
+[data-ui-mode="dark"] .text-area {
+    background-color: var(--dm-darker);
+    /* box-shadow: var(--dm-input-shadow) */
+    box-shadow: rgba(0, 0, 0, 0.6) 2px 3px 5px -3px inset, rgba(40, 40, 40, 0.5) 0px 5px 3.5px -6px inset;
+}
+
+[data-ui-mode="light"] .input,
+[data-ui-mode="light"] .text-area {
+    background: var(--lm-lighter)!important;
+    box-shadow: var(--lm-input-shadow)
+    /* border: solid 0.5px lightgray; */
+    /* background: red; */
+    /* background-color: gray; */
+}
+
+/* tab */
+
+[data-ui-mode="light"] .tab-icon svg {
+    stroke: var(--dm-darker)
+}
+
+[data-ui-mode="dark"] .tab-icon svg {
+    stroke: var(--dm-white)
+}
+
+/* tab highlight */
+
+[data-ui-mode="light"] .active-highlight {
+    background: var(--dm-darker)!important
+}
+
+[data-ui-mode="dark"] .active-highlight {
+    background: var(--dm-white)!important
+}
+
+/* tab underline */
+
+[data-ui-mode="light"] .underline {
+    background: var(--dm-faint-lines)!important
+}
+
+[data-ui-mode="dark"] .underline {
+    background: var(--dm-light)!important
+}
+
+/* tab container */
+
+[data-ui-mode="dark"] .tabbed-container {
+    background-color: var(--dm-dark);
+    /* border: solid thin;
+    border-color: var(--dm-mid);
+    border-bottom-color: var(--dm-light); */
+    box-shadow: rgba(67, 71, 85, 0.27) 0px 0px 0.25em, rgba(30, 30, 31, 0.15) 0px 0.25em 1em;
+}
+
+[data-ui-mode="light"] .tabbed-container {
+    background-color: var(--lm-white);
+    box-shadow: rgba(92, 92, 92, 0.27) 0px 0px 0.25em, rgba(255, 255, 255, 0.15) 0px 0.25em 1em;
+}
+
+/* buttons */
+
+[data-ui-mode="light"] [data-button-type="proceed"] {
+    background: var(--dm-light)!important
+}
+
+[data-ui-mode="dark"] [data-button-type="proceed"] {
+    background: var(--dm-black)!important
+}
+
+[data-ui-mode="light"] .button {
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+/* GAME */
+/* GAME */
+/* GAME */
+
+[data-ui-mode="dark"] .row > div {
+    background: var(--dm-darkest)!important;
+}
+
+[data-ui-mode="light"] .row > div {
+    /* background: var(--lm-white)!important; */
+    background: var(--white-opaque-1)!important;
+}
+
+[data-ui-mode="dark"] .value-container {
+    background: var(--dm-black)!important;
+}
+
+[data-ui-mode="light"] .value-container {
+    background: var(--lm-lighter)!important;
+}
+
+[data-ui-mode="dark"] .control-button {
+    background: var(--dm-dark)!important;
+}
+
+[data-ui-mode="light"] .control-button {
+    background: var(--lm-light)!important;
+    color: var(--dm-light);
+}
+
+[data-ui-mode="light"] .ledger {
+    background: var(--lm-white)!important;
+}
+
+[data-ui-mode="dark"] .ledger {
+    background: var(--dm-darkest)!important;
+}
+
+[data-ui-mode="dark"] .trade {
+    background: var(--dm-darker)!important;
+}
+
+.control-button svg {
+    stroke: currentColor;
+    stroke-width: 2px!important;
+}
