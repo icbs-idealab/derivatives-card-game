@@ -2,13 +2,15 @@
     <div class="player-roles">
         <!-- <SuitIcon suit={suit} /> -->
         {#if players}
-            {#each roleKeys as role}
-                <div class="player-role-icon flex jc-start">
-                    <div class="suit-wrapper flex">
-                        <SuitIcon suit={role} size={18} />
+            {#each allRoleNames as role}
+                {#if players[role].user_id || players[role].player_name}
+                    <div class="player-role-icon flex jc-start">
+                        <div class="suit-wrapper flex">
+                            <SuitIcon suit={role} size={18} />
+                        </div>
+                        <p> {players[role].player_name || 'Unassigned'} </p>
                     </div>
-                    <p> {players[role].player_name || 'Unassigned'} </p>
-                </div>
+                {/if}
             {/each}
         {/if}
     </div>
@@ -22,7 +24,7 @@
 <script lang="ts">
     import SuitIcon from "$lib/components/suit/suit-icon.svelte";
     import type { AppGamePlayers } from "$lib/types";
-    import { roleKeys, speculatorKeys } from "$lib/constants";
+    import { allRoleNames, roleKeys, speculatorKeys } from "$lib/constants";
     import { makeGamePlayersAsObject } from "$lib/helpers";
     export let players
 </script>

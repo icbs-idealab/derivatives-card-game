@@ -127,7 +127,9 @@
                 assingments[role].user_id = selectedRoles[role].user_id
                 assingments[role].player_name = selectedRoles[role].player_name
                 let indexInPool = pool.findIndex(player => player.user_id === selectedRoles[role].user_id)
+                console.log('splicing player with role at index: ', indexInPool)
                 pool.splice(indexInPool, 1)
+                console.log('pool after splice: ', [...pool])
             }
         }
 
@@ -135,6 +137,7 @@
             // speculators cannot have assignments. no need to check for matching role
             if(pool.length){
                 console.log('setting speculator: ', i)
+                console.log('pool player: ', pool[0])
                 let role = `speculator${i + 1}`
                 assingments[role].user_id = pool[0].user_id
                 assingments[role].player_name = pool[0].player_name
@@ -145,6 +148,7 @@
                 // }
             }
             else{
+                console.log('no players left in pool: ', [...pool])
                 // remove unassigned speculators
                 let role = `speculator${i + 1}`
                 delete assingments[role]

@@ -21,7 +21,7 @@ import ValueDisplay from "./value-display.svelte";
     }
 </script>
 
-{#if $currentGame.started}
+{#if $currentGame.started && !$currentGame.ended}
     <div class="ask-buy inner-column">
         <ValueChanger
             label="ASK" 

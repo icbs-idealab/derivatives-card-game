@@ -1,5 +1,5 @@
 <main data-ui-mode={ui}>
-    {#if authChecked}
+    {#if $authChecked}
         <RedirectHandler>
             <slot />
         </RedirectHandler>
@@ -26,6 +26,7 @@
     {#if activeUser && activeUser.id}
         <AppMenu 
             hasGame={activeUser.user_metadata.game_id}
+            game={activeGame}
             isAuthenticated={activeUser.id !== null}
             isAdmin={activeUser.user_metadata.admin}
         />
@@ -37,6 +38,10 @@
 
     {#if $showEndGameModal}
         <EndGameModal />
+    {/if}
+    
+    {#if $showPasswordUpdater}
+        <UpdatePassword />
     {/if}
 
     {#if $showLoadingModal}
@@ -51,11 +56,11 @@
     import '@fontsource/public-sans/300.css';
     import '@fontsource/public-sans/400.css';
     import '@fontsource/public-sans/600.css';
-    import { getAndWatchGame, getAuthenticatedUser, removeGameFromUserRecord, setLoadingModal } from "$lib/actions";
+    import { checkIfPasswordChanged, getAndWatchGame, getAuthenticatedUser, removeGameFromUserRecord, setLoadingModal } from "$lib/actions";
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { redirect } from "$lib/helpers";
-    import { currentGame, currentUser, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal } from "$lib/state";
+    import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked} from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
@@ -65,11 +70,11 @@
     import { browser } from '$app/env';
     import Backdrop from '$lib/components/app/backdrop.svelte';
     import EndGameModal from '$lib/components/app/end-game-modal.svelte';
-import AppRules from '$lib/components/app/app-rules.svelte';
+    import AppRules from '$lib/components/app/app-rules.svelte';
+    import UpdatePassword from '$lib/components/auth/update-password.svelte';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'
-    let authChecked = false
     let activeUser: Partial<SupabaseUser>  = {
         id: null, 
         user_metadata: {
@@ -92,34 +97,73 @@ import AppRules from '$lib/components/app/app-rules.svelte';
             })
     }
 
-    function watch(){
-        currentUser.subscribe( async userUpdate => {
-            let a = JSON.stringify({
-                id: userUpdate.id,
-                meta: userUpdate.user_metadata,
+    function compareUserData(newUserData){
+        let a = JSON.stringify({
+                id: newUserData.id,
+                meta: newUserData.user_metadata,
             })
             let b = JSON.stringify({
                 id: activeUser.id,
                 meta: activeUser.user_metadata,
             })
             
-            let sameData = a === b
-            
-            console.log(`<_layout> detected a ${sameData ? 'same' : 'different'} user: `, userUpdate)
-            
-            if(userUpdate.id){
-                // userUpdate.user_metadata.game_id && watchGame(userUpdate.user_metadata.game_id)
-                console.log( 'server subs: ', $serverSubscriptions.game )
-                userUpdate.user_metadata.game_id && !$serverSubscriptions.game && getAndWatchGame(userUpdate.user_metadata.game_id)
-                !sameData && (activeUser = userUpdate)
-                $page.path === "/" && userUpdate.user_metadata.game_id && redirect('/game')
+            return a === b
+    }
+
+    function watchRemoteGame(newUserData){
+        newUserData.user_metadata.game_id && !$serverSubscriptions.game && getAndWatchGame(newUserData.user_metadata.game_id)
+    }
+    
+    function updateLocalUser(newUserData){
+        let isSame = compareUserData(newUserData)
+        !isSame && (activeUser = newUserData)
+    }
+
+    function updatePath(newUserData){
+        $page.path === "/" && newUserData.user_metadata.game_id && redirect('/game')
+    }
+
+    function handleNewData(newUserData){
+        let isSame = compareUserData(newUserData)
+        if(newUserData.id){
+            // newUserData.user_metadata.game_id && watchGame(newUserData.user_metadata.game_id)
+            console.log( 'server subs: ', $serverSubscriptions.game )
+            watchRemoteGame(newUserData)
+            updateLocalUser(newUserData)
+            updatePath(newUserData)
+        }
+        else{
+            activeUser = {id: null, user_metadata: {}}
+            $page.path !== "/" && $authChecked && redirect('/')
+        }
+    }
+
+    async function isPasswordUpdated(newUserData){
+        const {data, error} = await checkIfPasswordChanged(newUserData)
+        console.log('$$pwd: ', data)
+        console.log('$$pwd error: ', error)
+        return data[0]
+    }
+
+    function watch(){
+        currentUser.subscribe( async userUpdate => {
+            // let isSame = compareUserData(userUpdate)
+            // console.log(`<_layout> detected a ${isSame ? 'same' : 'different'} user: `, userUpdate)
+            // handleNewData(userUpdate, isSame)
+            let updatedPassword = !$passwordUpdated && await isPasswordUpdated(userUpdate)
+            console.log('$$pwd updated: ', updatedPassword)
+
+            if(!updatedPassword){
+                updateLocalUser(userUpdate)
+                console.log('$$pwd will show password updater')
+                console.log('$$was auth checked? ', $authChecked)
+                $authChecked && !$showPasswordUpdater && showPasswordUpdater.set(true)
+                console.log('$$SPWU ', $showPasswordUpdater)
             }
             else{
-                activeUser = {id: null, user_metadata: {}}
-                $page.path !== "/" && authChecked && redirect('/')
+                $authChecked && $showPasswordUpdater && showPasswordUpdater.set(false)
+                handleNewData(userUpdate)
             }
-
-            !authChecked && (authChecked = true)
         })
 
         currentGame.subscribe(game => {
@@ -168,7 +212,6 @@ import AppRules from '$lib/components/app/app-rules.svelte';
             redirect('/')
         }
     })
-
 </script>
 
 <style>

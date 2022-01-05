@@ -77,8 +77,8 @@
         }
     }
 
-    $:playerCards = playerRole ? players[playerRole].hand : emptyHand
-    $:playerReveals = playerRole ? players[playerRole].revealed : emptyReveals
+    $:playerCards = playerRole ? (players[playerRole].hand || emptyHand) : emptyHand
+    $:playerReveals = playerRole ? (players[playerRole].revealed || emptyReveals) : emptyReveals
     // $:hand = calcHand(playerCards, playerReveals)
     $:hand = calcHand(players, playerRole)
 
@@ -167,6 +167,7 @@
                             roleData={players[role]}
                             localRates={localRates}
                             suit={role}
+                            gameActive={game.started && !game.ended}
                             playerCards={playerCards}
                             contracts={contracts[role]}
                             revealed={revealed[role]}

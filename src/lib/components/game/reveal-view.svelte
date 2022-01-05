@@ -1,11 +1,11 @@
 <script lang="ts">
     import { roleKeys } from "$lib/constants";
+    import type { PlayerRole, SuitName } from "$lib/types";
     import Backdrop from "../app/backdrop.svelte";
     import SuitIcon from "../suit/suit-icon.svelte";
-
     export let selectCard: (card: string) => any = (card: string) => console.log('selecting card ', card)
     export let selectedCard: string = ''
-    export let localRole: string = ''
+    export let localRole: any = ''
     export let reveals: any = {}
     export let playerHand = {
         clubs: 0,
@@ -20,85 +20,90 @@
     export let revealCard = () => {
         console.log('would reveal card')
     }
-
 </script>
 
 <Backdrop zIndex={10} opacity={0.1}>
-    <div class="player-reveal-view">
-        <div class="title-section flex fd-col">
-            <h1>Reveal Phase</h1>
-            <p>Select a Card to reveal</p>
-        </div>
-        <div class="cards-view">
-            {#each roleKeys as role}
-                <div class="card flex fd-col">
-                    <div class="card-wrapper flex" >
-                        <div 
-                            class="card-main flex" 
-                            on:click={() => !processingCardSelection && selectCard(role)}
-                            data-selected={selectedCard === role}
-                            data-exists={playerHand[role] !== 0}
-                        >
-                            <SuitIcon suit={role} size={80}  />
-                            <!-- <div class="card-extras"></div> -->
+    <div class="player-reveal-view">            
+            {#if localRole && roleKeys.indexOf(localRole) !== -1}
+                <div class="title-section flex fd-col">
+                    <h1>Reveal Phase</h1>
+                    <p>Select a Card to reveal</p>
+                </div>
+                
+                <div class="cards-view">
+                    {#each roleKeys as role}
+                        <div class="card flex fd-col">
+                            <div class="card-wrapper flex" >
+                                <div 
+                                    class="card-main flex" 
+                                    on:click={() => !processingCardSelection && selectCard(role)}
+                                    data-selected={selectedCard === role}
+                                    data-exists={playerHand[role] !== 0}
+                                >
+                                    <SuitIcon suit={role} size={80}  />
+                                    <!-- <div class="card-extras"></div> -->
+                                </div>
+                            </div>
+                            <p class="card-count">
+                                <span>{playerHand[role]}</span>
+                                <span>Cards</span>
+                            </p>
                         </div>
-                    </div>
-                    <p class="card-count">
-                        <span>{playerHand[role]}</span>
-                        <span>Cards</span>
-                    </p>
+                    {/each}
                 </div>
-            {/each}
-        </div>
-
-        <!-- <div class="fixed" style="font-size: 0.7em; position: fixed; bottom: 30px; right: 30px; color: white!important;">
-            <pre>{reveals[localRole] || 'nothing revealed'}</pre>
-        </div> -->
-
-        <div class="rv-reveal-control flex">
-            {#if !completedRevealRound}
-
-                {#if selectedCard && processingCardSelection}
-                    <div class="faux-button">
-                        Selecting {selectedCard}
-                    </div>
-                {:else}
-                    <button 
-                        disabled={!selectedCard || processingCardSelection}
-                        on:click={revealCard}
-                    >
-                        Reveal Card
-                    </button>
-                {/if}
-
-            {:else if localRole}
-                <!-- <p class="white" > You revealed {localReveals[localRole].reveals[localGame.round]} </p> -->
-                <p class="white" > You revealed {reveals[localRole]} </p>
+    
+                <div class="rv-reveal-control flex">
+                    {#if !completedRevealRound}
+    
+                        {#if selectedCard && processingCardSelection}
+                            <div class="faux-button">
+                                Selecting {selectedCard}
+                            </div>
+                        {:else}
+                            <button 
+                                disabled={!selectedCard || processingCardSelection}
+                                on:click={revealCard}
+                            >
+                                Reveal Card
+                            </button>
+                        {/if}
+    
+                    {:else if localRole}
+                        <!-- <p class="white" > You revealed {localReveals[localRole].reveals[localGame.round]} </p> -->
+                        <p class="white" > You revealed {reveals[localRole]} </p>
+                    {/if}
+                </div>  
+            {:else}
+                <div class="title-section flex fd-col">
+                    <h1>Reveal Phase</h1>
+                </div>
+                <div class="placeholder flex">
+                    <p>Waiting for market makers to select their cards</p>
+                </div>
+                <!-- <div class="placeholder"></div> -->
             {/if}
-        </div>  
 
-        <div class="players-display">
-            
-            {#each roleKeys as role}
-                <div 
-                    class="rv-player-role flex jc-start" 
-                    data-revealed={reveals[role] !== ""}
-                    >
-                    <div class="rv-player-icon flex">
-                        <SuitIcon suit={role} size={20} />
+            <div class="players-display">
+                
+                {#each roleKeys as role}
+                    <div 
+                        class="rv-player-role flex jc-start" 
+                        data-revealed={reveals[role] !== ""}
+                        >
+                        <div class="rv-player-icon flex">
+                            <SuitIcon suit={role} size={20} />
+                        </div>
+                        <p class="rv-player-text">
+                            { 
+                                reveals[role] ?
+                                    'Has revealed their card'
+                                    : 'is making a selection'
+                            }
+                        </p>
                     </div>
-                    <p class="rv-player-text">
-                        { 
-                            reveals[role] ?
-                                'Has revealed their card'
-                                : 'is making a selection'
-                        }
-                    </p>
-                </div>
-            {/each}
+                {/each}
 
-        </div>
-        
+            </div>
     </div>
 </Backdrop>
 

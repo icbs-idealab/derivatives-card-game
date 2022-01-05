@@ -1,4 +1,4 @@
-import { allRoleNames, defaultGame, defaultGamePlayer } from "./constants";
+import { allRoleNames, defaultErrorMessage, defaultGame, defaultGamePlayer } from "./constants";
 import { get, writable } from "svelte/store";
 import { getAndWatchGame, getAndWatchLobby, getAuthenticatedUser, watchGame } from "./actions";
 // import { makePlayers } from "./helpers";
@@ -9,19 +9,10 @@ import type { AppGamePlayers, SupabaseUser } from "./types";
 
 // CONSOLIDATED APP STATE
 
-
-export const appState = writable({
-    game_id: null,
-    players: [],
-    deck: {
-        revealed: [],
-        hidden: [],
-    },
-    lobby: [],
-})
-
+export const appMessage = writable(defaultErrorMessage)
 export const showErrorReporter = writable(false)
 export const appErrors = writable([] as AppErrors[])
+export const noSuchGame = writable(false)
 
 // USER
 
@@ -52,6 +43,9 @@ export const currentUser = writable(
     onUserSubscribe
 )
 
+export const passwordUpdated = writable(false)
+export const authChecked = writable(false)
+export const showPasswordUpdater = writable(false)
 function onUserSubscribe(){
     console.log('getting authenticated user in writable store callback')
     console.log('already got user?: ', gotUser)

@@ -3,10 +3,9 @@ import { get } from "svelte/store"
 import { allRoleNames, defaultGame, defaultUser, playerRevealRounds } from "./constants"
 import { buildShuffledDeck, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect } from "./state"
-import type { AppGamePlayers, NewGameProps, SupabaseUser } from "./types"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked } from "./state"
+import type { AppGamePlayers, MessageParams, NewGameProps, SupabaseUser } from "./types"
 import {nanoid} from 'nanoid'
-import { page } from "$app/stores"
 
 // USER
 
@@ -15,12 +14,6 @@ export const updateActiveUser = (newUserDetails: SupabaseUser) => {
     currentUser.update(current => ({...current, ...newUserDetails}))
 }
 
-// export function updateUserMetadata(params){
-//     currentUser.update(current => ({...current, user_metadata: {
-//         ...current.user_metadata,
-//         ...params
-//     }}))
-// }
 export const createUser = async (email: string) => {
     let password = 'test123'
     console.log('creating with faux password = ', password)
@@ -33,7 +26,6 @@ export const createUser = async (email: string) => {
 }
 
 export const resetUser = () => currentUser.update(() => ({...defaultUser}))
-
 
 // cannot subscribe to supabase users so will rely on calling this function whenever the _layout component is mounted to check for authenticated users
 
@@ -64,7 +56,37 @@ export const getAuthenticatedUser = async () => {
         updateActiveUser(user)  
     }
 
+    authChecked.set(true)
+
     return user
+}
+
+export const checkIfPasswordChanged = async (user) => {
+    return await supabase
+        .from('password-changed')
+        .select("*")
+        .eq('user_id', user.id)
+        .limit(1)
+}
+
+export const updatePassword = async (password: string) => {
+    let returnObject = {
+        user: null,
+        supabase: null,
+    }
+
+    returnObject.user  = await supabase.auth.update({password})
+
+    if(returnObject.user.data){
+        returnObject.supabase = await supabase
+            .from('password-changed')
+            .insert([{user_id: returnObject.user.data.id}])
+            .select("*")
+
+        currentUser.set(returnObject.user)
+    }    
+
+    return returnObject
 }
 
 export const updateUserMetadata = async (values: UserMetaDataValues) => {
@@ -320,32 +342,54 @@ function checkGameForAvailableRoles(playerData){
 
 export async function joinLobby(game_id, player){
 
-    getPlayerData(game_id)
-    .then(async playerData => {
-        return checkGameForAvailableRoles(playerData.data) 
-        // ? true : false
-    })
-    .then(async canJoin => {
-        if(canJoin){
-            return insertPlayer(game_id, player)
-        }
-        return false
-    })
-    .then(async insertedPlayer => {
-        return insertedPlayer ? updateUserMetadata({game_id, player_name: player.player_name}) : false
-    })
-    .then(async res => {
-        console.log('joined lobby, updated player record. redirect to game then refresh: ', res)
-        redirect('/game')
-        // setTimeout(() => {
-        //     reloadAfterRedirect.set(true)
-        // }, 1500)
-        // do not to stop showing loading modal as will be reloading page after redirect
-        // setLoadingModal(false)
-    })
-    .catch(err => {
-        console.log('error joining lobby: ', err)
-    })
+    // first check if such a game exists
+
+    const {data, error} = await getGame(game_id)
+
+    console.log('joining lobby with game: ', data)
+    console.log('joining lobby with game error: ', error)
+
+    if(error){
+        showMessage({
+            message: 'Error joining game',
+            errorMessage: error.message,
+            caller: 'joinLobby',
+            params: JSON.stringify({game_id}),
+            timestamp: Date.now()
+        })
+        setLoadingModal(false)
+    }
+    else if(data){
+        // then get players etc
+    
+        getPlayerData(game_id)
+        .then(async playerData => {
+            return checkGameForAvailableRoles(playerData.data) 
+            // ? true : false
+        })
+        .then(async canJoin => {
+            if(canJoin){
+                return insertPlayer(game_id, player)
+            }
+            return false
+        })
+        .then(async insertedPlayer => {
+            return insertedPlayer ? updateUserMetadata({game_id, player_name: player.player_name}) : false
+        })
+        .then(async res => {
+            console.log('joined lobby, updated player record. redirect to game then refresh: ', res)
+            redirect('/game')
+            // setTimeout(() => {
+            //     reloadAfterRedirect.set(true)
+            // }, 1500)
+            // do not to stop showing loading modal as will be reloading page after redirect
+            // setLoadingModal(false)
+        })
+        .catch(err => {
+            console.log('error joining lobby: ', err)
+        })
+    }
+
 }
 
 // GAME
@@ -596,7 +640,7 @@ export const endGame = async () => {
     // archive
     let {data: gameData} = await getGame(game.game_id)
     let playerData = await getPlayerData(game.game_id)
-    let tradeData = await getTrades(game.game_id)
+    let {data: tradeData} = await getTrades(game.game_id)
 
     let archive = {
         game: gameData,
@@ -611,7 +655,7 @@ export const endGame = async () => {
     setTimeout(() => {
         setLoadingModal(false)
     }, 1000)
-    return {meta: updateResult, players: deletePlayersResult, archiveResult}
+    return {meta: updateResult, players: deletePlayersResult, archiveResult, trades: deleteTradesResult}
 }
 
 export const removeGameFromUserRecord = async () => {
@@ -670,8 +714,24 @@ export async function getGame(game_id){
     if(data){
         currentGame.update(current => data)
     }
+    else if(!data && !error){
+        console.log('setting no such game')
+        noSuchGame.set(true)
+    }
 
     return {data, error}
+}
+
+export async function downloadGameData(game_id){
+    // let gData = await getGame(game_id)
+    let gTrades = await getTrades(game_id)
+    let gPlayers = await getPlayerData(game_id)
+
+    return {
+        // game: gData, 
+        trades: gTrades, 
+        players: gPlayers, 
+    }
 }
 
 export async function watchGame(game_id){
@@ -697,12 +757,15 @@ export async function watchGame(game_id){
 
 export async function getAndWatchGame(game_id){
     console.log('getting and watching game: ', game_id)
-    let {data: game} = await getGame(game_id)
+    let {data: game, error} = await getGame(game_id)
     let subs = get(serverSubscriptions)
     console.log('subs when attempting to subscribe to game: ', subs)
     if(game && !subs.game){
         currentGame.set(parseGameData(game))
         await watchGame(game_id)
+    }
+    else{
+        console.log('game already had sub')
     }
     return game
 }
@@ -810,12 +873,12 @@ export async function getTrades(game_id: string){
     
     if(error){
         console.log('error getting trades: ', error)
-        return null 
+        // return null 
     }
     else{
         gameTrades.set(data)
-        return data
     }
+    return {data, error}
 }
 
 function insertTrade(tradeData){
@@ -847,18 +910,17 @@ export async function watchTrades(game_id: string){
 }
 
 export async function getAndWatchTrades(game_id: string){
-    const trades = await getTrades(game_id)
+    const {data: trades} = await getTrades(game_id)
     let watching
     if(trades && !get(serverSubscriptions).trades){
         console.log('no trade subscription defined. will watch trades')
         watching = await watchTrades(game_id)
     }
-    else{
+    else {
         console.log('already had trade watcher')
     }
     return {trades, watching}
 }
-
 
 // UI
 
@@ -874,8 +936,14 @@ export function displayErrorReporter(state: boolean){
     showErrorReporter.set(state)
 }
 
-// Rules
+// RULES
 
 export function displayRules(state: boolean){
     showGameRules.set(state)
+}
+
+// MESSAGES
+
+export function showMessage(params: Partial<MessageParams>){
+    appMessage.set(params)
 }

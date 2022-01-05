@@ -70,25 +70,7 @@ export interface AppGame {
     completed: boolean
     maximum_spread: number
     deck: GameDeck
-    final_scores?: any
-    
-    // trade rates
-    // clubs_rate: {
-    //     buy: number
-    //     sell: number
-    // }
-    // diamonds_rate: {
-    //     buy: number
-    //     sell: number
-    // }
-    // hearts_rate: {
-    //     buy: number
-    //     sell: number
-    // }
-    // spades_rate: {
-    //     buy: number
-    //     sell: number
-    // }
+    final_scores?: any    
 }
 
 // DECK
@@ -179,13 +161,6 @@ interface RevealedRoundSuits {
     [index: string]: GameCard | null
 }
 
-// export interface _OldGameDeck extends SuitHands {
-//     game: GameDeck
-//     game_id: string
-//     reveals: {
-//         [key: string]: RevealedRoundSuits
-//     }
-// }
 export type AppGamePlayers = AppGamePlayer[]
 
 export interface OldGamePlayers {
@@ -286,4 +261,13 @@ export type TradeLedger = GameTrade[]
 export type TradeValue = null | number
 export interface TradeValues {
     [index: string]: TradeValue
+}
+
+export interface MessageParams {
+    caller: string
+    errorMessage: string
+    errorObject: string
+    timestamp: number
+    message: string
+    params?: string
 }

@@ -10,6 +10,7 @@
     import { canTrade, canUpdatePrice } from "$lib/state";
     import { updatePlayerPrices } from "$lib/actions";
     
+    export let gameActive: boolean = false
     export let isLastRevealed: boolean = false
     export let isActivePlayer = false
     export let maxSpread = 3
@@ -20,7 +21,7 @@
     }
     export let suit: SuitName | null
     $:canTradeState = $canTrade
-    export let playerCards = emptyHand
+    export let playerCards = {...emptyHand}
     export let revealed = 0
     export let contracts
     $:cardCount = suit ? playerCards[suit] : 0
@@ -90,7 +91,7 @@
             <BuySellControls 
                 buy={roleData.buy}
                 sell={roleData.sell}
-                disabled={!canTradeState[suit]}
+                disabled={!canTradeState[suit] || !gameActive}
                 suit={suit}
             />
         {/if}

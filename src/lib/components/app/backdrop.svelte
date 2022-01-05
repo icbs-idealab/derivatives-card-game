@@ -23,9 +23,9 @@
     export let color: string = 'var(--dm-darker)'
     export let opacity: number = 0.85
     export let zIndex: number = 1
-    export let onClick: (e: any) => any = (e) => {
-        console.log('click handler...', e)
-    }
+    // export let onClick: (e: any) => any = (e) => {
+    //     console.log('click handler...', e)
+    // }
     function handler(e){
         console.log('test...', e)
         console.log('class test...', e.target.className)
@@ -33,9 +33,9 @@
         //     console.log('success handler...', e)
         //     onClick(e)
         // }
-        if(e.path[1] && e.path[1].className.indexOf('backdrop-content') !== -1){
-            console.log('success handler...', e)
-            onClick(e)
-        }
+        // if(e.path[1] && e.path[1].className.indexOf('backdrop-content') !== -1){
+        //     console.log('success handler...', e)
+        //     onClick(e)
+        // }
     }
 </script>

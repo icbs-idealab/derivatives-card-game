@@ -1,4 +1,4 @@
-import type { AppGame, AppGamePlayer, AppGamePlayers, CardHand, PlayerRole, SupabaseUser, SuitName, SuitReveals, SuitRevealsBool } from "./types";
+import type { AppGame, AppGamePlayer, AppGamePlayers, CardHand, PlayerRole, SupabaseUser, SuitName, SuitReveals, SuitRevealsBool, MessageParams } from "./types";
 // import { makePlayers } from "$lib/state";
 
 export const defaultUser: SupabaseUser = {
@@ -141,4 +141,12 @@ export const playerRevealRounds = {
     16: true,
     21: true,
     26: true,
+}
+
+export const defaultErrorMessage: Partial<MessageParams> = {
+    errorMessage: "",
+    errorObject: "",
+    caller: "",
+    timestamp: 0,
+    message: "",
 }

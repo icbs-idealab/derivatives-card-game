@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { SuitName } from '$lib/types';
+    import type { PlayerRole, SuitName } from '$lib/types';
     let config = {
         clubs: {
             symbol: '&clubs;',
@@ -19,13 +19,14 @@
         },
     }
 
-    export let suit: SuitName = 'clubs'
+    export let suit: SuitName | PlayerRole = 'clubs'
     export let size: number = 16
-    let symbol = config[suit].symbol
+    let symbol = config[suit] ? config[suit].symbol : '🤔'
+    let color = config[suit] ? config[suit].color : ''
 
 </script>
 
-<div class="suit flex" style={`font-size: ${size}px; color: ${ config[suit].color };`}>
+<div class="suit flex" style={`font-size: ${size}px; color: ${ color };`} data-symbol={symbol}>
     {@html symbol}
 </div>
 
@@ -35,5 +36,8 @@
         margin: 0;
         padding: 0;
         /* text-shadow: -0.5px -0.5px blueviolet; */
+    }
+    [data-symbol="🤔"]{
+        transform: scale(0.7);
     }
 </style>

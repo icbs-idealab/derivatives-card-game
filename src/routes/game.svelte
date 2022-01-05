@@ -4,7 +4,7 @@
     import Play from "$lib/components/game/play.svelte";
     import { allRoleNames, emptyHand, emptyReveals, emptySuits, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
     import { getRelevantTrades, makeGamePlayersAsObject } from "$lib/helpers";
-    import { currentGame, currentUser, gamePlayers, gameTrades } from "$lib/state";
+    import { currentGame, currentUser, gamePlayers, gameTrades, noSuchGame, serverSubscriptions } from "$lib/state";
     import type { AppGame, SuitName, SuitReveals } from "$lib/types";
     import { afterUpdate, onMount } from "svelte";
     import { get } from "svelte/store";
@@ -18,6 +18,8 @@
     // $:tradeCount = calculateContracts(trades)
     let contractCount = {...emptyHand}
     let watchingTrades = false
+    // let watchingPlayers = false
+    // let watchingPlayers = false
     let showGameRound = false
     $:playable = haveRequiredRoles && exists
     let playerRole = ''
@@ -358,19 +360,22 @@
             watchTradesInServer()
             // watchTradesLocal()
         }
-        // if(playerRole && players[playerRole] && players[playerRole].user_id){
-        //     // check players' rates
-        // }
+        if(currentPlayer.user_metadata.game_id && playable && !$serverSubscriptions.game){
+            getAndWatchGame(currentPlayer.user_metadata.game_id)
+        }
+        if(currentPlayer.user_metadata.game_id && !$serverSubscriptions.players){
+            getAndWatchPlayers(currentPlayer.user_metadata.game_id)
+        }
     })
 
     onMount(() => {
         console.log('current user on mount: ', currentPlayer)
-        if(currentPlayer.id){
-            getAndWatchPlayers(currentPlayer.user_metadata.game_id)
-            if(currentPlayer.user_metadata.game_id){
-                getAndWatchGame(currentPlayer.user_metadata.game_id)
-            }
-        }
+        // if(currentPlayer.id){
+        //     getAndWatchPlayers(currentPlayer.user_metadata.game_id)
+        //     if(currentPlayer.user_metadata.game_id){
+        //         getAndWatchGame(currentPlayer.user_metadata.game_id)
+        //     }
+        // }
     })
 </script>
 
@@ -409,6 +414,14 @@
         <Lobby 
             haveRequiredRoles={haveRequiredRoles}
         />
+    {:else if $noSuchGame}
+        <div class="no-such-game flex">
+            <div class="content">
+                <h1 class="error-title">Error finding game.</h1>
+                <h2 class="error-sub-title">You may be attempting to join a game that does not exist.</h2>
+                <p>Please check (with your game admin if necessary) that the game-id used is correct and try again by clicking the 'leave game' button at the bottom of your screen.</p>
+            </div>
+        </div>
     {:else}
         <ul class="lobby-details">
             <li>waiting for game data</li>
@@ -430,6 +443,46 @@
 </div>
 
 <style>
+
+    .no-such-game {
+        height: 100vh;
+        width: 100vw;
+        position: absolute;
+        top:0;
+        left:0;
+        right:0;
+        bottom:0;
+        padding: 10vw 15vw;
+    }
+
+    .no-such-game .content {
+        width: 100%;
+        max-width: 700px;
+        padding: 40px;
+        border-radius: 8px;
+        border: solid thin lightgray;
+    }
+
+    .no-such-game .content p {
+        opacity: 0.7;
+    }
+
+    .error-title {
+        margin: 0 0 35px;
+        width: 100%;
+        color: var(--red)!important;
+        font-size: 1.7em;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .error-sub-title {
+        margin: 0 0 35px;
+        width: 100%;
+        text-align: left;
+        font-size: 1.25em;
+    }
+
     .loading-lobby {
         position: fixed;
         top: 0;
