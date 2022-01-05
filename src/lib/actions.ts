@@ -3,7 +3,7 @@ import { get } from "svelte/store"
 import { allRoleNames, defaultGame, defaultUser, playerRevealRounds } from "./constants"
 import { buildShuffledDeck, Logger, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked } from "./state"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked, showAppMessage } from "./state"
 import type { AppGamePlayers, MessageParams, NewGameProps, SupabaseUser } from "./types"
 import {nanoid} from 'nanoid'
 
@@ -948,4 +948,8 @@ export function displayRules(state: boolean){
 
 export function showMessage(params: Partial<MessageParams>){
     appMessage.set(params)
+}
+
+export function setShowAppMessage(newState){
+    showAppMessage.set(newState)
 }

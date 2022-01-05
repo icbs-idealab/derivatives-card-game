@@ -11,15 +11,28 @@
 
     <!-- user details -->
 
-    <div class="user-details">
-        <div class="current-game">
-            <p>Game ID: <span>{activeGame.game_id || 'Not in game'}</span></p>
+    {#if $page.path !== '/admin'}
+        <div class="user-details">
+            <div class="current-game flex jc-start">
+                <p>Game ID: 
+                    <span><b id="target">{activeGame.game_id}</b></span>
+                </p>
+                <!-- <div 
+                    class="copy-icon" 
+                    data-hide={!activeGame.game_id}
+                    style="margin-left: 10px;"
+                    data-clipboard-target="#target"
+                >
+                    <Icon icon="copy" />
+                </div>
+                <div class="copied" data-show={showCoppied}>Copied!</div> -->
+            </div>
+            <div class="current-user">
+                <!-- <p>UID: <span>{activeUser.id}</span> </p> -->
+                <p>Email: <span>{activeUser.email}</span> </p>  
+            </div>
         </div>
-        <div class="current-user">
-            <p>UID: <span>{activeUser.id}</span> </p>
-            <p>Email: <span>{activeUser.email}</span> </p>  
-        </div>
-    </div>
+    {/if}
 
     <!-- game menu -->
 
@@ -39,9 +52,13 @@
     {#if $showEndGameModal}
         <EndGameModal />
     {/if}
-    
+
     {#if $showPasswordUpdater}
         <UpdatePassword />
+    {/if}
+
+    {#if $showAppMessage}
+        <AppErrorMessage />
     {/if}
 
     {#if $showLoadingModal}
@@ -60,7 +77,7 @@
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { Logger, redirect } from "$lib/helpers";
-    import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked} from "$lib/state";
+    import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage} from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
@@ -70,6 +87,9 @@
     import EndGameModal from '$lib/components/app/end-game-modal.svelte';
     import AppRules from '$lib/components/app/app-rules.svelte';
     import UpdatePassword from '$lib/components/auth/update-password.svelte';
+    import ClipboardJS from 'clipboard'
+    import Icon from '$lib/components/icon/icon.svelte';
+import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'
@@ -84,6 +104,7 @@
 
     let activeGame: Partial<AppGame> = {...defaultGame}
     let watchingGame = null
+    let showCoppied = false
 
     function removeFromRecord(){
         setLoadingModal(true)
@@ -131,8 +152,9 @@
             updatePath(newUserData)
         }
         else{
+            console.log('path is: ', $page.path)
             activeUser = {id: null, user_metadata: {}}
-            $page.path !== "/" && $authChecked && redirect('/')
+            $page.path !== "/" && $page.path !== "/admin" && $authChecked && redirect('/')
         }
     }
 
@@ -146,7 +168,7 @@
     function watch(){
         currentUser.subscribe( async userUpdate => {
             // let isSame = compareUserData(userUpdate)
-            // Logger([`<_layout> detected a ${isSame ? 'same' : 'different'} user: `,] userUpdate)
+            Logger([`<_layout> detected a user change: `, userUpdate])
             // handleNewData(userUpdate, isSame)
 
             if(userUpdate.id){
@@ -209,10 +231,22 @@
 
     onMount(() => {
         watch()
+
+        // let clipboard = new ClipboardJS('.copy-icon')
+        // clipboard.on('success', () => {
+        //     showCoppied = true
+        //     setTimeout(() => {
+        //         showCoppied = false
+        //     })
+        // })
+        // clipboard.on('error', (e) => {
+        //     console.log('error copying ', e)
+        // })
+
     })
 
     afterUpdate(() => {
-        if(authChecked && !activeUser.id && $page.path !== '/'){
+        if(authChecked && !activeUser.id && $page.path !== '/' && $page.path !== '/admin'){
             redirect('/')
         }
     })
@@ -247,6 +281,30 @@
         color: var(--dm-mid)!important;
     }
 
+    /* [data-hide="true"] {
+        opacity: 0!important;
+    }
+
+    .copied {
+        position: absolute;
+        right: 0;
+        top: 0;
+        background: lightgray;
+        border-radius: 4px;
+        padding: 4px;
+        font-size: 0.8em;
+        transition: all .2s ease;
+        opacity: 0;
+        z-index: 5;
+        width: 40px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .copied[data-show="true"] {
+        right: -60px;
+        opacity: 1;
+    } */
     /* .user-details span {
         font-weight: 300;
         color: black!important;

@@ -16,6 +16,8 @@
     import AppMenuItem from "./app-menu-item.svelte";
     import fileSaver from 'file-saver'
     import { Logger } from "$lib/helpers";
+    import { onMount } from "svelte";
+    import { page } from "$app/stores";
     // import { browser } from "$app/env";
     const {saveAs} = fileSaver
 
@@ -97,14 +99,6 @@
 
     }
 
-    // async function deleteTradesManual(){
-    //     let game_id = $currentGame.game_id
-    //     setLoadingModal(true)
-    //     const result = await deleteTrades(game_id)
-    //     console.log('deleted trades: ', result)
-    //     setLoadingModal(false)
-    // }
-
     $:items = [
         {
             label: 'Sign-out',
@@ -116,7 +110,7 @@
             label: 'Leave Game',
             icon: 'leave',
             action: () => leaveGame(),
-            condition: isAuthenticated && hasGame
+            condition: isAuthenticated && hasGame && $page.path !== '/admin'
         },
         {
             label: 'View Rules',
@@ -128,7 +122,7 @@
             label: 'Download Data',
             icon: 'leave',
             action: () => download(game),
-            condition: isAuthenticated && hasGame && game.game_id
+            condition: isAuthenticated && hasGame && game.game_id && $page.path !== '/admin'
         },
         // {
         //     label: 'Delete Trades',
@@ -137,9 +131,11 @@
         //     condition: browser && location.href.indexOf('localhost') !== -1
         // },
     ]
+
+    $:offset = $page.path === '/admin'
 </script>
 
-<ul class="app-menu flex jc-start">
+<ul class="app-menu flex jc-start" data-offset={offset}>
     {#each items as menuItem}
         {#if menuItem && menuItem.condition}
             <li>
@@ -174,6 +170,19 @@
         margin: 0;
         padding: 0;
         list-style: none;
+    }
+
+    .app-menu[data-offset="true"]{
+        left: unset;        
+        left: 20px;
+        bottom: 25px;
+        flex-direction: column-reverse;
+        align-items: flex-start;
+    }
+    
+    .app-menu[data-offset="true"] li {
+        margin-right: 0;
+        margin-top: 18px;
     }
 
     li {

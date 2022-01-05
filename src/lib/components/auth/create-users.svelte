@@ -1,10 +1,11 @@
 <script lang="ts">
     import Icon from "$lib/components/icon/icon.svelte";
-    import TextInput from "$lib/input/text-input.svelte";
+    import TextInput from "$lib/components/input/text-input.svelte";
     import ClickWrapper from "$lib/components/interaction/click-wrapper.svelte";
     import {nanoid} from 'nanoid'
     import { emailIsValid, Logger } from "$lib/helpers";
-    import { createUser } from "$lib/actions";
+    import { createUser, setLoadingModal, setShowAppMessage, showMessage } from "$lib/actions";
+    import Papa from 'papaparse'
 
     let list = [createNewUserInput()]
     let submitting = false
@@ -13,26 +14,56 @@
     function submit(){
         let go = hasAllEmails()
         Logger(['has all emails: ', go])
-        go ?
-            createUsersFromList() :
-            Logger(['will show error message...'])
+        go && createUsersFromList()
+        !go && showError()
+
+        function showError(){
+            showMessage({
+                message: 'There are invalid emails in your list. Please check and correct them.',
+                errorMessage: '',
+                timestamp: Date.now()
+            })
+
+            setShowAppMessage(true)
+        }
     }
 
     async function createUsersFromList(){
         submitting = true
-        userList.forEach(async (u, i) => {
-            let newUser = await createUser(u.email)
-            if(newUser.error){
-                Logger(['error creating user: ', newUser.error])
-                list[i].success = false
-                list[i].error = newUser.error
-            }
-            else {
-                Logger(['created user: ', newUser.user])
-                list[i].success = true
-                list[i].user = newUser
-            }
+        userList.forEach((u, i) => {
+            createUser(u.email)
+            .then(result => {
+
+                // if(result.user && !result.error){
+                    Logger(['result of creating user: ', result.user])
+                    list[i].success = !result.error
+                    list[i].user = result.user
+                    list[i].error = result.error
+                // }
+
+
+            })
+            .catch(err => {
+                Logger(['error creating user: ', err])
+                // list[i].success = false
+                // list[i].error = newUser.error
+            })
         })
+
+        // submitting = 
+        // userList.forEach(async (u, i) => {
+        //     let newUser = await createUser(u.email)
+        //     if(newUser.error){
+        //         Logger(['error creating user: ', newUser.error])
+        //         list[i].success = false
+        //         list[i].error = newUser.error
+        //     }
+        //     else {
+        //         Logger(['created user: ', newUser.user])
+        //         list[i].success = true
+        //         list[i].user = newUser
+        //     }
+        // })
     }
 
     function createNewUserInput(){
@@ -44,13 +75,57 @@
             success: null,
         }
     }
+
     function add(){
         Logger(['adding...'])
         let n = createNewUserInput()
         list = list.concat([n])
     }
-    function selectFile(){
+
+    function selectFile(e){
         // display file selector
+        setLoadingModal(true)
+        console.log('selecting file: ', e)
+        if(e.target.files && e.target.files.length){
+            console.log('target file: ', e.target.files[0])
+            let f = Papa.parse(e.target.files[0], {complete: (res) => {
+
+                console.log('result: ', res)
+                let newList = []
+                let added: any = {}
+                res.data.map(row => {
+
+                    let n: any = {
+                        // email: (row[0] as string),
+                        id: nanoid(12),
+                        user: null,
+                        success: null,
+                    }
+                    if(Array.isArray(row) && row[0] && row[0] !== 'email'){
+                        n.email = (row[0] as string)
+                        // only add unique emails
+                        if(!added[row[0]]){
+                            newList.push(n)
+                            added[row[0]] = true
+                        }
+                    }
+                    else if(typeof row === 'string'){
+                        // only add unique emails
+                        n.email = row
+                        if(!added[row]){
+                            newList.push(n)
+                            added[row] = true
+                        }
+                    }
+                })
+
+                list = list.concat(newList)
+
+                setTimeout(() => {
+                    setLoadingModal(false)
+                }, 1000)
+            }})
+        }
     }
 
     const hasAllEmails = () => list.filter(i => emailIsValid(i.email)).length === list.length
@@ -78,7 +153,7 @@
         border-bottom: solid thin lightgray;
     }
 
-    p {
+    p, .button-label {
         font-size: 0.7em;
         margin: 0;
         color: gray;
@@ -150,6 +225,16 @@
         width: 30px;
         height: 30px;
     }
+
+    #csv {
+        /* display: hidden; */
+        opacity: 0;
+        height: 0;
+        width: 0;
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+    }
 </style>
 
 <div class="create-users">
@@ -158,18 +243,24 @@
             <div class="tool">
                 <ClickWrapper handler={add}>
                     <div class="flex jc-start">
-                        <p>Add Email</p>
+                        <span class="button-label">Add Email</span>
                         <Icon icon="add" />
                     </div>
                 </ClickWrapper>
             </div>
-            <div class="tool">
-                <ClickWrapper handler={add}>
-                    <div class="flex jc-start">
-                        <p>Import CSV</p>
-                        <Icon icon="upload" />
-                    </div>
-                </ClickWrapper>
+            <div class="">
+                <!-- <ClickWrapper handler={selectFile}> -->
+                    <form>
+                        <div class="" for="csv">
+                            <label class="tool flex jc-start" for="csv">
+                                <span class="button-label">Import CSV</span>
+                                <Icon icon="fileImport" />
+                            </label>
+                        </div>
+                        <!-- hidden input -->
+                        <input type="file" name="csv" id="csv" on:input={selectFile}>
+                    </form>
+                <!-- </ClickWrapper> -->
             </div>
         </div>
         

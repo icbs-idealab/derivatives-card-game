@@ -11,6 +11,8 @@ import { Logger } from "./helpers";
 // CONSOLIDATED APP STATE
 
 export const appMessage = writable(defaultErrorMessage)
+export const showAppMessage = writable(false)
+
 export const showErrorReporter = writable(false)
 export const appErrors = writable([] as AppErrors[])
 export const noSuchGame = writable(false)

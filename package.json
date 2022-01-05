@@ -37,8 +37,10 @@
     "@sveltejs/adapter-static": "^1.0.0-next.21",
     "@sveltejs/adapter-vercel": "^1.0.0-next.31",
     "@sveltejs/kit": "^1.0.0-next.202",
+    "clipboard": "^2.0.8",
     "file-saver": "^2.0.5",
-    "nanoid": "^3.1.30"
+    "nanoid": "^3.1.30",
+    "papaparse": "^5.3.1"
   },
   "type": "module"
 }
