@@ -4,7 +4,8 @@
     import { currentGame, showEndGameModal, showGameRules } from "$lib/state";
     import type { AppGame } from "$lib/types";
     import AppMenuItem from "./app-menu-item.svelte";
-    import {saveAs} from 'file-saver'
+    import fileSaver from 'file-saver'
+    const {saveAs} = fileSaver
 
     export let hasGame: boolean = false
     export let game: Partial<AppGame> = {...defaultGame}
@@ -103,12 +104,12 @@
             action: () => showGameRules.set(true),
             condition: true
         },
-        {
-            label: 'Report Issue',
-            icon: 'bug',
-            action: () => displayErrorReporter(true),
-            condition: true
-        },
+        // {
+        //     label: 'Report Issue',
+        //     icon: 'bug',
+        //     action: () => displayErrorReporter(true),
+        //     condition: true
+        // },
         {
             label: 'Download Data',
             icon: 'leave',

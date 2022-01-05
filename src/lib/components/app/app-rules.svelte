@@ -1,6 +1,6 @@
 <script>
     import { showGameRules } from "$lib/state";
-import Icon from "../icon/icon.svelte";
+    import Icon from "../icon/icon.svelte";
     import Backdrop from "./backdrop.svelte";
     function hideRules(){
         showGameRules.set(false)
@@ -38,9 +38,9 @@ import Icon from "../icon/icon.svelte";
             </div>
         </ul>
     </div>
-    <div class="controls flex">
+    <div class="controls flex" on:click={hideRules}>
         <!-- <button class="close button" on:click={hideRules}>Close Rules</button> -->
-        <div on:click={hideRules} class="flex">
+        <div class="flex">
             <Icon icon="close" />
         </div>
     </div>
