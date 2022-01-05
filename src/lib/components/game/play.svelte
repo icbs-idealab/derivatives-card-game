@@ -1,7 +1,7 @@
 <script lang="ts">
     import { revealPlayerCard } from "$lib/actions";
     import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
-    import { makeGamePlayersAsObject } from "$lib/helpers";
+    import { Logger, makeGamePlayersAsObject } from "$lib/helpers";
     import type { AppGame } from "$lib/types";
     import Backdrop from "../app/backdrop.svelte";
     import Button from "../button/button.svelte";
@@ -35,7 +35,6 @@
     
     function withSymbol(val){
         let symbol = val < 0 ? '-' : ''
-        console.log()
         return `${symbol}$${Math.abs(val/100)}`
     }
 
@@ -43,21 +42,6 @@
     $:derivedBalance = withSymbol(balance)
     $:derivedFinalBalance = playerRole && game && game.final_scores ? withSymbol(game.final_scores[playerRole].final) : ''
     
-    // function calcHand(cards, revealed){
-    //     let h = {...cards}
-    //     // console.log('$H: ', h)
-    //     // console.log('$H2: ', revealed)
-    //     for(let revealRound in revealed){
-    //         let card = revealed[revealRound]
-    //         // console.log('$card: ', card)
-    //         if(card){
-    //             h[card] -= 1
-    //         }
-    //     }
-
-    //     return h
-    // }
-
     function calcHand(players, playerRole){
         if(playerRole){
             let p = players[playerRole]
@@ -94,7 +78,7 @@
             update.hand[selectedCard] -= 1
             update.revealed[game.round] = selectedCard
 
-            console.log('will update player with new hand: ', update)
+            Logger(['will update player with new hand: ', update])
 
             revealPlayerCard(
                 update,
@@ -102,10 +86,10 @@
                 players[playerRole].user_id
             )
             .then(res => {
-                console.log('successfully revealed card: ', res)
+                Logger(['successfully revealed card: ', res])
             })
             .catch(err => {
-                console.log('error revealing card: ', err)
+                Logger(['error revealing card: ', err])
             })
             .finally(() => {
                 processingCardSelection = false

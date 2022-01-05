@@ -3,7 +3,7 @@
     import Lobby from "$lib/components/game/lobby.svelte";
     import Play from "$lib/components/game/play.svelte";
     import { allRoleNames, emptyHand, emptyReveals, emptySuits, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
-    import { getRelevantTrades, makeGamePlayersAsObject } from "$lib/helpers";
+    import { getRelevantTrades, Logger, makeGamePlayersAsObject } from "$lib/helpers";
     import { currentGame, currentUser, gamePlayers, gameTrades, noSuchGame, serverSubscriptions } from "$lib/state";
     import type { AppGame, SuitName, SuitReveals } from "$lib/types";
     import { afterUpdate, onMount } from "svelte";
@@ -185,7 +185,7 @@
     $:revealed = countReveals(game, players)
 
     function setPlayers(newPlayers){
-        console.log('setting players locally: ', newPlayers)
+        Logger(['setting players locally: ', newPlayers])
         players = newPlayers
     }
 
@@ -205,7 +205,7 @@
 
     async function watchTradesInServer(){
         const res = await getAndWatchTrades(game.game_id)
-        console.log('result of watching trades: ', res)
+        Logger(['result of watching trades: ', res])
         watchingTrades = true
         // if(watching){
         // }
@@ -215,7 +215,7 @@
         setLoadingModal(true)
         startGame()
             .catch(err => {
-                console.log('<game /> error starting game: ', err)
+                Logger(['<game /> error starting game: ', err])
             })
             .finally(() => {
                 setLoadingModal(false)
@@ -227,7 +227,7 @@
         // updateGame({round: game.round + 1})
         return nextRound()
         .catch(err => {
-            console.log('err loading: ', err)
+            Logger(['err loading: ', err])
         })
         .finally(() => {
             setLoadingModal(false)
@@ -246,7 +246,7 @@
 
     async function finalAction(_game){
         let lastRevealed = _game.deck.revealed[_game.deck.revealed.length -1]
-        console.log('last revealed: ', lastRevealed)
+        Logger(['last revealed: ', lastRevealed])
 
         // calc player scores
         let fPlayers = get(gamePlayers)
@@ -257,7 +257,7 @@
             let targetPlayer = fPlayers[player]
 
             let relevant = getRelevantTrades(allTrades, targetPlayer.user_id, targetPlayer.role)
-            console.log('relevant trades for player: ', relevant)
+            Logger(['relevant trades for player: ', relevant])
             let inventory = calculatePlayerInventory(relevant, targetPlayer.role)
 
             playerResults[player] = {
@@ -277,7 +277,7 @@
         // setLoadingModal(true)
         setFinalGameScores(playerResults)
         .catch(err => {
-            console.log('error setting final game scores: ', err)
+            Logger(['error setting final game scores: ', err])
         })
         .finally(() => {
             setLoadingModal(false)
@@ -289,8 +289,8 @@
         
         let {data, error} = await nextRound(true)
 
-        console.log('$$$: end: ', data)
-        console.log('$$$: end: ', error)
+        Logger(['$$$: end: ', data])
+        Logger(['$$$: end: ', error])
 
         if(data && Array.isArray(data)){
             finalAction(data[0])
@@ -324,7 +324,7 @@
     })
 
     gamePlayers.subscribe(newPlayers => {
-        console.log('got game players: ', newPlayers)
+        Logger(['got game players: ', newPlayers])
         setPlayers(newPlayers)
         checkRequiredRoles(newPlayers)
         if(playerRevealRounds[game.round]){
@@ -336,9 +336,9 @@
     })
 
     gameTrades.subscribe(newGameTrades => {
-        console.log('got new game trades: ', newGameTrades)
+        Logger(['got new game trades: ', newGameTrades])
         if(JSON.stringify(newGameTrades) !== JSON.stringify(trades)){
-            console.log('trades different, will update')
+            Logger(['trades different, will update'])
             let usableTrades = [...newGameTrades]
             if(usableTrades.length > 10){
                 usableTrades.length = 10
@@ -347,16 +347,16 @@
         }
 
         let relevant = getRelevantTrades(newGameTrades, currentPlayer.id, playerRole)
-        console.log('relevant trades: ', relevant)
+        Logger(['relevant trades: ', relevant])
         let inventory = calculatePlayerInventory(relevant)
-        console.log('inventory: ', inventory)
+        Logger(['inventory: ', inventory])
         balance = inventory.balance
         contractCount = inventory.contracts
     })
-
+    
     afterUpdate(() => {
         if(playable && !watchingTrades){
-            console.log('will watch all trades')
+            Logger(['will watch all trades'])
             watchTradesInServer()
             // watchTradesLocal()
         }
@@ -369,7 +369,7 @@
     })
 
     onMount(() => {
-        console.log('current user on mount: ', currentPlayer)
+        Logger(['current user on mount: ', currentPlayer])
         // if(currentPlayer.id){
         //     getAndWatchPlayers(currentPlayer.user_metadata.game_id)
         //     if(currentPlayer.user_metadata.game_id){

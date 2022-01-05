@@ -27,11 +27,11 @@
             
             setLoadingModal(true)
 
-            console.log('submitting in login.svelte')
+            // console.log('submitting in login.svelte')
             
             let signedIn = await onSubmit({email, password})
             
-            console.log('result of sign in...: ', signedIn)
+            // console.log('result of sign in...: ', signedIn)
 
             if(signedIn.error){
                 const ers: AppErrors = [{

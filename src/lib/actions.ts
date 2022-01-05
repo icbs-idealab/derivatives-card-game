@@ -1,7 +1,7 @@
 import { supabase } from "$lib/backend"
 import { get } from "svelte/store"
 import { allRoleNames, defaultGame, defaultUser, playerRevealRounds } from "./constants"
-import { buildShuffledDeck, makeGamePlayers, redirect } from "./helpers"
+import { buildShuffledDeck, Logger, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
 import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked } from "./state"
 import type { AppGamePlayers, MessageParams, NewGameProps, SupabaseUser } from "./types"
@@ -10,13 +10,13 @@ import {nanoid} from 'nanoid'
 // USER
 
 export const updateActiveUser = (newUserDetails: SupabaseUser) => {
-    // console.log('updating user details: ', newUserDetails)
+    // Logger(['updating user details: ', newUserDetails])
     currentUser.update(current => ({...current, ...newUserDetails}))
 }
 
 export const createUser = async (email: string) => {
     let password = 'test123'
-    console.log('creating with faux password = ', password)
+    Logger(['creating with faux password = ', password])
     let { user, error } = await supabase.auth.signUp({
         email,
         password
@@ -30,7 +30,7 @@ export const resetUser = () => currentUser.update(() => ({...defaultUser}))
 // cannot subscribe to supabase users so will rely on calling this function whenever the _layout component is mounted to check for authenticated users
 
 export const getAuthenticatedUser = async () => {
-    // console.log('getting authenticated user(): ')
+    // Logger(['getting authenticated user(): '])
     let user: SupabaseUser | null = await supabase.auth.user()
     let current = get(currentUser)
     let subs = get(serverSubscriptions)
@@ -47,12 +47,12 @@ export const getAuthenticatedUser = async () => {
 
     let isDifferent = JSON.stringify(a) !== JSON.stringify(b)
     
-    // console.log('User A: ', a)
-    // console.log('User B: ', b)
-    // console.log('is different: ', isDifferent)
+    // Logger(['User A: ', a])
+    // Logger(['User B: ', b])
+    // Logger(['is different: ', isDifferent])
 
     if(user && isDifferent){
-        console.log('got different user: ', user)
+        Logger(['got different user: ', user])
         updateActiveUser(user)  
     }
 
@@ -90,13 +90,13 @@ export const updatePassword = async (password: string) => {
 }
 
 export const updateUserMetadata = async (values: UserMetaDataValues) => {
-    console.log('updating user meta data: ', values)
+    Logger(['updating user meta data: ', values])
     const {data, error} = await supabase.auth.update({
         data: values
     })
 
     if(error){
-        console.log('error updating user metadata: ', error)
+        Logger(['error updating user metadata: ', error])
     }
     else if(data){
         currentUser.set(data)
@@ -143,8 +143,8 @@ export const updatePlayer = async (newData, game_id, user_id) => {
 
 export const revealPlayerCard = async (newPlayerData, game_id, user_id) => {
     const {data, error} = await updatePlayer(newPlayerData, game_id, user_id)
-    data !== null && console.log('result of player update: ', data)
-    error !== null && console.log('error updating player: ', data)
+    data !== null && Logger(['result of player update: ', data])
+    error !== null && Logger(['error updating player: ', data])
     return {data, error, success: !error}
 }
 
@@ -153,31 +153,31 @@ export const updatePlayerPrices = async (newPrices) => {
     let user_id = get(currentUser).id
 
     const {data, error} = await updatePlayer(newPrices, game_id, user_id)
-    data !== null && console.log('result of player price update: ', data)
-    error !== null && console.log('error updating player prices: ', error)
+    data !== null && Logger(['result of player price update: ', data])
+    error !== null && Logger(['error updating player prices: ', error])
     return {data, error, success: !error}
 }
 
 export const getPlayerData = async (game_id: string) => {
-    console.log('getting player data for: ', game_id)    
+    Logger(['getting player data for: ', game_id])
     let {data, error} = await supabase.from('game-players')
         .select('*')
         .eq('game_id', game_id)
 
-    console.log('player data: ', data)
+    Logger(['player data: ', data])
 
     return {data, error, success: !error}
 }
 
 export const watchPlayers = async (game_id: string) => {
-    console.log('attempting to watch players... ', game_id)
+    Logger(['attempting to watch players... ', game_id])
     if(game_id){
         const players = await supabase
             .from(`game-players:game_id=eq.${game_id}`)
             // .select('game_id,admin,round,started,ended,completed,maximum_spread')
             .on('UPDATE', (payload) => {
                 // update game object in app state
-                console.log('got game-players update: ', payload)
+                Logger(['got game-players update: ', payload])
                 // updateGamePlayers({players: payload.new})
                 syncGamePlayers(payload.new)
             })
@@ -192,7 +192,7 @@ export const watchPlayers = async (game_id: string) => {
 
 export const getAndWatchPlayers = async (game_id: string) => {
     if(game_id){
-        console.log('getting and watching players')
+        Logger(['getting and watching players'])
         let players = await getPlayerData(game_id)
         
         if(players.data && typeof Array.isArray(players.data)) {
@@ -211,11 +211,11 @@ export const getAndWatchPlayers = async (game_id: string) => {
 }
 
 export function syncGamePlayers(update){
-    console.log('syncing players with update value: ', update)
+    Logger(['syncing players with update value: ', update])
     gamePlayers.update(currentPlayers => {
         // players.data
         // players.data
-        console.log('current players: ', currentPlayers)
+        Logger(['current players: ', currentPlayers])
 
         let newPlayers = {...currentPlayers}
         
@@ -237,7 +237,7 @@ export function syncGamePlayers(update){
             }
         }
 
-        console.log('data before syncing players: ', newPlayers)
+        Logger(['data before syncing players: ', newPlayers])
     
         return newPlayers    
     })
@@ -247,30 +247,30 @@ const getPlayersFromLobby = async (game_id) => {
     const {data, error} = await supabase.from('game-lobby')
         .select('*')
         .eq('game_id', game_id)
-    console.log("new lobby players: ", data)
+    Logger(["new lobby players: ", data])
     return {data, success: !error, error}
 }
 
 const watchLobby = async (game_id: string) => {
     const subscription = await supabase.from(`game-lobby:game_id=eq.${game_id}`)
         .on('INSERT', (payload) => {
-            console.log('got new lobby payload: ', payload)
+            Logger(['got new lobby payload: ', payload])
             syncLobby(payload.new)
         })
         .on('DELETE', (payload) => {
-            console.log('got new lobby deletion payload: ', payload)
+            Logger(['got new lobby deletion payload: ', payload])
             syncLobby(payload.new, true)
         })
         .subscribe()
 
-    console.log('watchLobby() -> subscribed to lobby: ', subscription)
+    Logger(['watchLobby() -> subscribed to lobby: ', subscription])
 
     serverSubscriptions.update((current) => ({...current, lobby: subscription}))
 }
 
 export const getAndWatchLobby = async (game_id: string) => {
     if(game_id){
-        console.log('getting lobby players')
+        Logger(['getting lobby players'])
         let players = await getPlayersFromLobby(game_id)
         if(players.data) {
             syncLobby(players.data)
@@ -289,23 +289,23 @@ export const getAndWatchLobby = async (game_id: string) => {
 export function syncLobby(update, remove: boolean = false){
     lobby.update(currentLobbyPlayers => {
         // players.data
-        console.log('syncing... current lobby players: ', currentLobbyPlayers)
+        Logger(['syncing... current lobby players: ', currentLobbyPlayers])
 
         let currentPlayers = [...currentLobbyPlayers]
         
         if(Array.isArray(update)){
-            console.log('syncing. New payload is Array')
+            Logger(['syncing. New payload is Array'])
             update.map(player => {
                 let index = currentPlayers.findIndex(currentPlayer => currentPlayer.user_id === player.user_id)
                 remove && index !== -1 && currentPlayers.splice(index, 1)
                 !remove && index === -1 && currentPlayers.push({...player})
                 // player already exists
-                !remove && index !== -1 && console.log('player with given ID already exists in local lobby, will not update')
+                !remove && index !== -1 && Logger(['player with given ID already exists in local lobby will not update'])
             })
         }
         else{
             let index = currentPlayers.findIndex(currentPlayer => currentPlayer.user_id === update.user_id)
-            console.log('syncing. New payload is Object. Index was: ', index)
+            Logger(['syncing. New payload is Object. Index was: ', index])
             remove && index !== -1 && currentPlayers.splice(index, 1)
             !remove && index === -1 && currentPlayers.push({...update})
         }
@@ -329,7 +329,7 @@ async function insertPlayer(game_id, player){
 }
 
 function checkGameForAvailableRoles(playerData){
-    console.log('checking against: ', playerData)
+    Logger(['checking against: ', playerData])
         let count = 0
         // let ps = Object.keys(playerData)
         playerData.map(player => {
@@ -346,8 +346,8 @@ export async function joinLobby(game_id, player){
 
     const {data, error} = await getGame(game_id)
 
-    console.log('joining lobby with game: ', data)
-    console.log('joining lobby with game error: ', error)
+    Logger(['joining lobby with game: ', data])
+    Logger(['joining lobby with game error: ', error])
 
     if(error){
         showMessage({
@@ -377,7 +377,7 @@ export async function joinLobby(game_id, player){
             return insertedPlayer ? updateUserMetadata({game_id, player_name: player.player_name}) : false
         })
         .then(async res => {
-            console.log('joined lobby, updated player record. redirect to game then refresh: ', res)
+            Logger(['joined lobby, updated player record. redirect to game then refresh: ', res])
             redirect('/game')
             // setTimeout(() => {
             //     reloadAfterRedirect.set(true)
@@ -386,7 +386,7 @@ export async function joinLobby(game_id, player){
             // setLoadingModal(false)
         })
         .catch(err => {
-            console.log('error joining lobby: ', err)
+            Logger(['error joining lobby: ', err])
         })
     }
 
@@ -431,8 +431,8 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
         gameId: game_id
     })
 
-    // console.log('made new players: ', newGamePlayers)
-    // console.log('made new game: ', newGame)
+    // Logger(['made new players: ', newGamePlayers])
+    // Logger(['made new game: ', newGame])
 
     // if(false){
 
@@ -445,8 +445,8 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
                 .limit(1)
                 .single()
             
-            console.log('result of making game: ', data)
-            console.log('errors in making game: ', error)
+            Logger(['result of making game: ', data])
+            Logger(['errors in making game: ', error])
             
             let type = "game"
                 let res = data && data.length && data.length > 1 ?
@@ -468,8 +468,8 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
                 }
             })
     
-            console.log('result of updating creator: ', data)
-            console.log('result of updating creator: ', error)
+            Logger(['result of updating creator: ', data])
+            Logger(['error updating creator?: ', error])
     
             let type = "creator"
     
@@ -483,8 +483,8 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
                 .insert(newGamePlayers)
                 .select('user_id,player_name,hand,revealed,role,buy,sell')
                 
-            console.log('result of making players: ', data)
-            console.log('errors while making players: ', error)
+            Logger(['result of making players: ', data])
+            Logger(['errors while making players: ', error])
     
             let type = "players"
     
@@ -499,14 +499,14 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
                 makeNewPlayers, 
             ])
             .then(res => {
-                console.log('successfully handled all promises: ', res)
+                Logger(['successfully handled all promises: ', res])
                 // redirect to game 
                 // return {res, game_id}
                 viewCreatedGame(res)
                 return game_id
             })
             .catch(err => {
-                console.log('err creating new game: ', err)
+                Logger(['err creating new game: ', err])
                 return err
                 // log error in app
             })
@@ -520,7 +520,7 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
 const viewCreatedGame = async (creationResults: any[]) => {
     let game = creationResults.filter(cr => cr.type === 'game')[0].data
     reloadAfterRedirect.set(true)
-    console.log('game: ', game)
+    Logger(['game: ', game])
     if(game){
         currentGame.set(parseGameData(game))
         if(!get(serverSubscriptions).game){
@@ -546,16 +546,16 @@ export const assignGamePlayers = async (game_id, roleAssignments) => {
                     .eq('role', player.role)
             // }
             // catch(err){
-            //     console.log(`error assigning player ${player.role}: `, err)
+            //     Logger([`error assigning player ${player.role}: `, err])
             // }
         })
     )
     .then(res => {
-        console.log('successfully assigned all game roles: ', res)
+        Logger(['successfully assigned all game roles: ', res])
         return res
     })
     .catch(err => {
-        console.log('error assigning players before game start: ', err)
+        Logger(['error assigning players before game start: ', err])
     })
 }
 
@@ -569,11 +569,11 @@ export async function updateGame(updateValue){
             .eq('game_id', game_id)
 
         if(!error){
-            console.log('successfully updated game: ', data)
+            Logger(['successfully updated game: ', data])
             return {data, success: true}
         }
         else{
-            console.log('error starting game: ', error)
+            Logger(['error starting game: ', error])
             return {error, success: false}
         }
 
@@ -587,7 +587,7 @@ export const removeFromLobby = async (game_id) => {
         .eq("game_id", game_id)
 
         if(error){
-            console.log('error removing players from lobby: ', error)
+            Logger(['error removing players from lobby: ', error])
         }
 
         return {data, error, success: !error}
@@ -627,7 +627,7 @@ export async function archiveGame(archiveData){
         .select("*")
 
     if(error){
-        console.log('error archiving data: ', error)
+        Logger(['error archiving data: ', error])
     }
 
     return {data, error, success: !error}
@@ -637,25 +637,27 @@ export const endGame = async () => {
     setLoadingModal(true)
     let game = get(currentGame)
     
-    // archive
-    let {data: gameData} = await getGame(game.game_id)
-    let playerData = await getPlayerData(game.game_id)
-    let {data: tradeData} = await getTrades(game.game_id)
-
-    let archive = {
-        game: gameData,
-        players: playerData,
-        trades: tradeData,
+    if(game.game_id){
+        // archive
+        let {data: gameData} = await getGame(game.game_id)
+        let playerData = await getPlayerData(game.game_id)
+        let {data: tradeData} = await getTrades(game.game_id)
+    
+        let archive = {
+            game: gameData,
+            players: playerData,
+            trades: tradeData,
+        }
+    
+        let archiveResult = await archiveGame(archive)
+        let deletePlayersResult = await deletePlayers(game.game_id)
+        let deleteTradesResult = await deleteTrades(game.game_id)
+        let updateResult = await updateGame({ended: true})
+        return {meta: updateResult, players: deletePlayersResult, archiveResult, trades: deleteTradesResult}
     }
-
-    let archiveResult = await archiveGame(archive)
-    let deletePlayersResult = await deletePlayers(game.id)
-    let deleteTradesResult = await deleteTrades(game.id)
-    let updateResult = await updateGame({ended: true})
-    setTimeout(() => {
-        setLoadingModal(false)
-    }, 1000)
-    return {meta: updateResult, players: deletePlayersResult, archiveResult, trades: deleteTradesResult}
+    else{
+        return 'no game_id. could not end game'
+    }
 }
 
 export const removeGameFromUserRecord = async () => {
@@ -669,10 +671,10 @@ export const nextRound = async (ignoreIncrement?: boolean) => {
     let {round, deck} = uptoDateValues
     
     if(round && deck){
-        console.log('ignoring increment')
+        Logger(['ignoring increment'])
         let next = round + (ignoreIncrement ? 0 : 1)
-        console.log('$$ next round: ', next)
-        console.log('$$ is next round a player reveal? ', playerRevealRounds[next])
+        Logger(['$$ next round: ', next])
+        Logger(['$$ is next round a player reveal? ', playerRevealRounds[next]])
         let update: {deck?: any, round: number} = {
             round: next
         }
@@ -682,19 +684,19 @@ export const nextRound = async (ignoreIncrement?: boolean) => {
             let card = newDeck.held.shift()
             newDeck.revealed.push(card)
             update.deck = newDeck
-            console.log('$$ new deck: ', newDeck)
+            Logger(['$$ new deck: ', newDeck])
         }
     
         let updateResult = await updateGame(update)
         return updateResult
     }
     else{
-        console.log('error updating game round with remote data: ', )
+        Logger(['error updating game round with remote data: ', ])
     }
 }
 
 export async function getGame(game_id){
-    console.log('getting game id: ', game_id)
+    Logger(['getting game id: ', game_id])
     let {data, error} = await supabase.from('games')
         .select('*')
         .eq('game_id', game_id)
@@ -703,19 +705,19 @@ export async function getGame(game_id){
 
     if(error){
         // set application wide error notifications here
-        console.log('error getting game ', game_id)
+        Logger(['error getting game ', game_id])
         console.error(error)
         // return null
     }
 
-    console.log('got game data: ', data)
+    Logger(['got game data: ', data])
 
     // update game local object
     if(data){
         currentGame.update(current => data)
     }
     else if(!data && !error){
-        console.log('setting no such game')
+        Logger(['setting no such game'])
         noSuchGame.set(true)
     }
 
@@ -735,43 +737,43 @@ export async function downloadGameData(game_id){
 }
 
 export async function watchGame(game_id){
-    console.log('attempting to watch game...', game_id)
+    Logger(['attempting to watch game...', game_id])
     let subs = get(serverSubscriptions)
     if(game_id && !subs.game){
-        console.log('subscribing to game')
+        Logger(['subscribing to game'])
         const game = await supabase
             .from(`games:game_id=eq.${game_id}`)
             // .from(`games`)
             // .select('game_id,admin,round,started,ended,completed,maximum_spread')
             .on('*', (payload) => {
                 // update game object in app state
-                console.log('got game update: ', payload)
+                Logger(['got game update: ', payload])
                 currentGame.set(parseGameData(payload.new))
             })
             .subscribe()
         
         serverSubscriptions.update(original => ({...original, game}))
-        console.log('game subscription: ', game)
+        Logger(['game subscription: ', game])
     }
 }
 
 export async function getAndWatchGame(game_id){
-    console.log('getting and watching game: ', game_id)
+    Logger(['getting and watching game: ', game_id])
     let {data: game, error} = await getGame(game_id)
     let subs = get(serverSubscriptions)
-    console.log('subs when attempting to subscribe to game: ', subs)
+    Logger(['subs when attempting to subscribe to game: ', subs])
     if(game && !subs.game){
         currentGame.set(parseGameData(game))
         await watchGame(game_id)
     }
     else{
-        console.log('game already had sub')
+        Logger(['game already had sub'])
     }
     return game
 }
 
 function parseGameData(data){
-    console.log('parsing game data: ', data)
+    Logger(['parsing game data: ', data])
     return {
         ...data,
         admin: JSON.parse(data.admin)
@@ -793,7 +795,7 @@ export async function leaveGame(){
 
     let id = loggedIn.user().id
 
-    console.log('deleting lobby record for user with ID: ', id)
+    Logger(['deleting lobby record for user with ID: ', id])
 
     await supabase
         .from(`game-lobby`)
@@ -838,15 +840,15 @@ export async function processTrade({market, type, value}){
         game_id: game.game_id,
         round: game.round
     }
-    console.log('would trade: ', trade)
+    Logger(['would trade: ', trade])
 
     // const {data, error} = await publishTrade(trade)
     publishTrade(trade)
     .then(({data}) => {
-        console.log('successfully published trades: ', data)
+        Logger(['successfully published trades: ', data])
     }) 
     .catch(error => {
-        console.log('error publishing trade: ', error)
+        Logger(['error publishing trade: ', error])
     })
     .finally(() => {
         setTimeout(() => {
@@ -872,7 +874,7 @@ export async function getTrades(game_id: string){
         .order('created_at', {ascending: false})
     
     if(error){
-        console.log('error getting trades: ', error)
+        Logger(['error getting trades: ', error])
         // return null 
     }
     else{
@@ -882,10 +884,10 @@ export async function getTrades(game_id: string){
 }
 
 function insertTrade(tradeData){
-    console.log('inserting trade: ', tradeData)
+    Logger(['inserting trade: ', tradeData])
     gameTrades.update(currentTrades => {
         let newTrades = [tradeData].concat(currentTrades)
-        console.log('new trade state: ', newTrades)
+        Logger(['new trade state: ', newTrades])
         // if(newTrades.length > 10){
         //     newTrades.splice(-1, 1)
         // }
@@ -898,7 +900,7 @@ export async function watchTrades(game_id: string){
     const subscription = await supabase
         .from(`game-trades:game_id=eq.${game_id}`)
         .on("INSERT", (payload) => {
-            console.log('saw trade: ', payload.new)
+            Logger(['saw trade: ', payload.new])
             if(payload.new.game_id === game_id){
                 insertTrade(payload.new)
             }
@@ -913,11 +915,11 @@ export async function getAndWatchTrades(game_id: string){
     const {data: trades} = await getTrades(game_id)
     let watching
     if(trades && !get(serverSubscriptions).trades){
-        console.log('no trade subscription defined. will watch trades')
+        Logger(['no trade subscription defined. will watch trades'])
         watching = await watchTrades(game_id)
     }
     else {
-        console.log('already had trade watcher')
+        Logger(['already had trade watcher'])
     }
     return {trades, watching}
 }
@@ -925,7 +927,7 @@ export async function getAndWatchTrades(game_id: string){
 // UI
 
 export const setLoadingModal = (newState) => {
-    console.log('setting loading modal')
+    Logger(['setting loading modal'])
     showLoadingModal.set(newState)
 }
 

@@ -55,6 +55,7 @@
 
 <script lang="ts">
     import { endGame, setLoadingModal } from "$lib/actions";
+import { Logger } from "$lib/helpers";
     import { showEndGameModal } from "$lib/state";
     import Backdrop from "./backdrop.svelte";
     function abort(){
@@ -65,13 +66,16 @@
         setLoadingModal(true)
         endGame()
         .then((result) => {
-            console.log('result of ending game: ', result)
+            Logger(['result of ending game: ', result])
         })
         .catch((err) => {
-            console.log('error ending game')
+            Logger(['error ending game', err])
         })
         .finally(() => {
-            console.log('ended game!')
+            Logger(['ended game!'])
+            setTimeout(() => {
+                setLoadingModal(false)
+            }, 1000)
         })
     }
 </script>

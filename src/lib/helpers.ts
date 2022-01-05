@@ -4,9 +4,17 @@ import { get } from "svelte/store";
 import { allRoleNames, defaultGamePlayer, emptyHand, emptyReveals, playerRevealRoundsArray, roleKeys } from "./constants";
 import { currentUser, gamePlayers } from "./state";
 import type { AppGamePlayer, AppGamePlayers, GameCard, Holder, SuitName } from "./types";
+const DEV = import.meta.env.VITE_DEV
+
+export function Logger(params: any[]){
+    // check env function
+    if(DEV === "true" || DEV === true || ( typeof params[0] === 'string' && params[0].startsWith('err')) ){
+        console.log(...params)
+    }
+}
 
 export function redirect(path: string){
-    console.log('redirecting to: ', path)
+    Logger(['redirecting to: ', path])
     browser && goto(path)
     // browser && goto('status')
 }
@@ -117,18 +125,18 @@ export const buildShuffledDeck = () => {
         spades: {...emptyHand},
     }
 
-    console.log('new game hand is: ', hand)
+    Logger(['new game hand is: ', hand])
     
     for(let i = 0; i<6; i++){
         // add one random card to each role
         roleKeys.forEach((roleKey: string) => {
             let rc = removeCardFromTop(hand)
             roleHands[roleKey][rc] += 1
-            console.log('removed card form top: ', rc, ' and added to: ', roleKey)
+            Logger(['removed card form top: ', rc, ' and added to: ', roleKey])
         })
     }
 
-    console.log('created deck with roleHands: ', roleHands)
+    Logger(['created deck with roleHands: ', roleHands])
 
 
     return {

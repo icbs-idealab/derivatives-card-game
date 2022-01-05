@@ -5,7 +5,7 @@
     export let active: boolean = true
     export let handleTrade: () => void = () => {console.log('clicked trade')}
     function beforeTrade(){
-        console.log('before trade ', active)
+        // console.log('before trade ', active)
         if(active) {
             handleTrade()
         }

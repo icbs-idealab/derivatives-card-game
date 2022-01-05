@@ -10,7 +10,11 @@
     <div class="ledger">
         <div class="items">
             {#each trades as trade}
-                <Trade {...trade} />
+                <Trade 
+                    market={trade.market}
+                    type={trade.type}
+                    price={trade.price}
+                />
             {/each}
         </div>
     </div>

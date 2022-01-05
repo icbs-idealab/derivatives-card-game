@@ -91,11 +91,6 @@
     -moz-appearance: textfield;
     }
 
-    .value  p {
-        margin: 0;
-        line-height: 0.75;
-    }
-
     .value span {
         text-align: center;
     }

@@ -4,6 +4,7 @@ import { getAndWatchGame, getAndWatchLobby, getAuthenticatedUser, watchGame } fr
 // import { makePlayers } from "./helpers";
 import type { AppErrors } from "./types";
 import type { AppGamePlayers, SupabaseUser } from "./types";
+import { Logger } from "./helpers";
 // import { makePlayers } from "./helpers";
 
 
@@ -47,18 +48,18 @@ export const passwordUpdated = writable(false)
 export const authChecked = writable(false)
 export const showPasswordUpdater = writable(false)
 function onUserSubscribe(){
-    console.log('getting authenticated user in writable store callback')
-    console.log('already got user?: ', gotUser)
-    console.log('current user: ', get(currentUser).id)
+    Logger(['getting authenticated user in writable store callback'])
+    Logger(['already got user?: ', gotUser])
+    Logger(['current user: ', get(currentUser).id])
     if(!gotUser){
         getAuthenticatedUser()
         .then((result) => {
             gotUser = result
         })
-        .catch(err => console.log('error getting auth user: ', err))
+        .catch(err => Logger(['error getting auth user: ', err]))
     }
 
-    return () => console.log('destroyed user listener')
+    return () => Logger(['destroyed user listener'])
 }
 
 // PLAYERS
@@ -88,7 +89,7 @@ export const lobby = writable([])
 export const currentGame = writable({...defaultGame}, 
     () => {
         let activeUser = get(currentUser)
-        console.log('result of user search in game store initialization: ', activeUser)
+        Logger(['result of user search in game store initialization: ', activeUser])
         if(activeUser && activeUser.user_metadata && activeUser.user_metadata.game_id){
             getAndWatchGame(activeUser.user_metadata.game_id)
         }

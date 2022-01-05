@@ -148,7 +148,7 @@
     import Backdrop from "$lib/components/app/backdrop.svelte";
     import Icon from "../icon/icon.svelte";
     import TextInput from "../input/text-input.svelte";
-    import { redirect } from "$lib/helpers";
+    import { Logger, redirect } from "$lib/helpers";
     import { currentUser, showPasswordUpdater } from "$lib/state";
     import { browser } from "$app/env";
     let editingPassword = true
@@ -163,7 +163,7 @@
     let showPwd: boolean = false
 
     function onUpdatePassword({target}){
-        console.log('new val: ', target.value)
+        // console.log('new val: ', target.value)
         newPassword = target.value
         if(!touched.a){ touched.a = true}
         checkMatch()
@@ -198,13 +198,13 @@
         updatePassword(newPassword)
         .then((result) => {
             completed = true
-            console.log('success! updated password: ', result)
+            Logger(['success! updated password: ', result])
             // setTimeout(() => {
             //     currentUser.set(result.user.data)
             // }, 3000)
         })
         .catch((err) => {
-            console.log('error updating password: ', err)
+            Logger(['error updating password: ', err])
             // show error message here
         })
         .finally(() => {

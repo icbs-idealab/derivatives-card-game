@@ -3,7 +3,7 @@
     import TextInput from "$lib/input/text-input.svelte";
     import ClickWrapper from "$lib/components/interaction/click-wrapper.svelte";
     import {nanoid} from 'nanoid'
-    import { emailIsValid } from "$lib/helpers";
+    import { emailIsValid, Logger } from "$lib/helpers";
     import { createUser } from "$lib/actions";
 
     let list = [createNewUserInput()]
@@ -12,10 +12,10 @@
     
     function submit(){
         let go = hasAllEmails()
-        console.log('has all emails: ', go)
+        Logger(['has all emails: ', go])
         go ?
             createUsersFromList() :
-            console.log('will show error message...')
+            Logger(['will show error message...'])
     }
 
     async function createUsersFromList(){
@@ -23,12 +23,12 @@
         userList.forEach(async (u, i) => {
             let newUser = await createUser(u.email)
             if(newUser.error){
-                console.log('error creating user: ', newUser.error)
+                Logger(['error creating user: ', newUser.error])
                 list[i].success = false
                 list[i].error = newUser.error
             }
             else {
-                console.log('created user: ', newUser.user)
+                Logger(['created user: ', newUser.user])
                 list[i].success = true
                 list[i].user = newUser
             }
@@ -45,7 +45,7 @@
         }
     }
     function add(){
-        console.log('adding...')
+        Logger(['adding...'])
         let n = createNewUserInput()
         list = list.concat([n])
     }

@@ -8,7 +8,7 @@
     import SuitIcon from "$lib/components/suit/suit-icon.svelte";
     import { setLoadingModal } from "$lib/actions";
     import { allRoleNames, roleKeys } from "$lib/constants";
-    import { makeGamePlayers } from "$lib/helpers";
+    import { Logger, makeGamePlayers } from "$lib/helpers";
     import { get } from "svelte/store";
     import Icon from "../icon/icon.svelte";
 
@@ -47,7 +47,7 @@
     }
 
     const lobbySubscription = lobby.subscribe(newLobbyData => {
-        console.log('got new lobby data: ', newLobbyData)
+        Logger(['got new lobby data: ', newLobbyData])
         if(newLobbyData && typeof newLobbyData.map === 'function'){
             let ids = []
             let users = []
@@ -77,7 +77,7 @@
     
 
     lobbyRequirements.subscribe(lobbyReq => {
-        console.log('lobby-req: ', lobbyReq)
+        Logger(['lobby-req: ', lobbyReq])
         if(lobbyReq.gamePlayers && lobbyReq.lobbyPlayers){
             // can now properly render player selection list
             listReady = true
@@ -93,7 +93,7 @@
     }
 
     gamePlayers.subscribe(newGamePlayers => {
-        console.log('got new game players in <Lobby /> ', newGamePlayers)
+        Logger(['got new game players in <Lobby /> ', newGamePlayers])
         
         // let adminId = get(currentGame).admin.user_id
         let adminId = ''
@@ -127,17 +127,17 @@
                 assingments[role].user_id = selectedRoles[role].user_id
                 assingments[role].player_name = selectedRoles[role].player_name
                 let indexInPool = pool.findIndex(player => player.user_id === selectedRoles[role].user_id)
-                console.log('splicing player with role at index: ', indexInPool)
+                Logger(['splicing player with role at index: ', indexInPool])
                 pool.splice(indexInPool, 1)
-                console.log('pool after splice: ', [...pool])
+                Logger(['pool after splice: ', [...pool]])
             }
         }
 
         for(let i = 0; i<6; i++){
             // speculators cannot have assignments. no need to check for matching role
             if(pool.length){
-                console.log('setting speculator: ', i)
-                console.log('pool player: ', pool[0])
+                Logger(['setting speculator: ', i])
+                Logger(['pool player: ', pool[0]])
                 let role = `speculator${i + 1}`
                 assingments[role].user_id = pool[0].user_id
                 assingments[role].player_name = pool[0].player_name
@@ -148,7 +148,7 @@
                 // }
             }
             else{
-                console.log('no players left in pool: ', [...pool])
+                Logger(['no players left in pool: ', [...pool]])
                 // remove unassigned speculators
                 let role = `speculator${i + 1}`
                 delete assingments[role]
@@ -160,12 +160,12 @@
             assignmentArray.push(assingments[role])
         }
 
-        console.log('assignments: ', assingments)
-        console.log('pool: ', pool)
+        Logger(['assignments: ', assingments])
+        Logger(['pool: ', pool])
 
         assignGamePlayers(localUser.user_metadata.game_id, assignmentArray)
         .catch(err => {
-            console.log('error assigning players: ', err)
+            Logger(['error assigning players: ', err])
         })
         .finally(() => {
             setLoadingModal(false)

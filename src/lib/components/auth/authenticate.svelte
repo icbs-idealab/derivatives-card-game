@@ -5,6 +5,7 @@
     import { requestAccess, signIn } from "$lib/actions";
     import Login from "./login.svelte";
     import RequestAccess from "./request-access.svelte";
+import { Logger } from "$lib/helpers";
     // import { onMount } from "svelte";
     // import { user } from "$lib/state";
     // import { browser } from "$app/env";
@@ -32,22 +33,22 @@
     export let show: string = tabs[0].id
 
     function setShow(target){
-        console.log('setting...')
+        Logger(['setting...'])
         show = target
     }
 
     const submit = async ({email, password, message}: any) => {
-        console.log('async submit')
+        Logger(['async submit'])
         if(show === 'login'){
             // handle log-in submission
-            console.log('handling login: ', email, ' ', password)
+            Logger(['handling login: ', email, ' ', password])
             const newUser = await signIn(email, password)
-            console.log('new user is: ', newUser)
+            Logger(['new user is: ', newUser])
             return newUser
         }
         else {
             // handle request submission
-            console.log('hadling request: ', email, ' ', message)
+            Logger(['hadling request: ', email, ' ', message])
             const requestStatus = await requestAccess(email, message)
             return requestStatus
         }
@@ -59,7 +60,7 @@
 
     const updateEmail = (value) => {
         email = value
-        console.log('udpating')
+        Logger(['udpating'])
     }
     function updatePassword(value){password = value}
     function updateMessage(value){message = value}

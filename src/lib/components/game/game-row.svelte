@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { makeGamePlayersAsObject } from "$lib/helpers";
+    import { Logger, makeGamePlayersAsObject } from "$lib/helpers";
     import PlayerHand from "./player-hand.svelte";
     import PlayerInventory from "./player-inventory.svelte";
     import ValueChanger from "./value-changer.svelte";
@@ -28,12 +28,12 @@
     $:buy = localRates.buy !== roleData.buy ? localRates.buy : roleData.buy
     $:sell = localRates.sell !== roleData.sell ? localRates.sell : roleData.sell
     function updateLocal(value, type){
-        console.log('would update value: ', value, type)
+        Logger(['would update value: ', value, type])
         localRates[type] = value
     }
 
     function saveNewPrices(){
-        console.log('would update value in backend')
+        Logger(['would update value in backend'])
         // new pricesf
         let priceUpdate = {
             buy,
@@ -44,13 +44,13 @@
 
         updatePlayerPrices(priceUpdate)
         .then(result => {
-            console.log('successfully updated price: ', result)
+            Logger(['successfully updated price: ', result])
         })
         .catch(error => {
-            console.log('error updating price: ', error)
+            Logger(['error updating price: ', error])
         })
         .finally(() => {
-            console.log('finished updating price')
+            Logger(['finished updating price'])
             setTimeout(() => {
                 canUpdatePrice.set(true)
             }, 500)

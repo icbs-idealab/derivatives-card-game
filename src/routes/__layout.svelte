@@ -56,19 +56,17 @@
     import '@fontsource/public-sans/300.css';
     import '@fontsource/public-sans/400.css';
     import '@fontsource/public-sans/600.css';
-    import { checkIfPasswordChanged, getAndWatchGame, getAuthenticatedUser, removeGameFromUserRecord, setLoadingModal } from "$lib/actions";
+    import { checkIfPasswordChanged, getAndWatchGame, removeGameFromUserRecord, setLoadingModal } from "$lib/actions";
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
-    import { redirect } from "$lib/helpers";
+    import { Logger, redirect } from "$lib/helpers";
     import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked} from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
     import type { AppGame, SupabaseUser } from '$lib/types';
     import { defaultGame } from '$lib/constants';
-    import { get } from 'svelte/store';
     import { browser } from '$app/env';
-    import Backdrop from '$lib/components/app/backdrop.svelte';
     import EndGameModal from '$lib/components/app/end-game-modal.svelte';
     import AppRules from '$lib/components/app/app-rules.svelte';
     import UpdatePassword from '$lib/components/auth/update-password.svelte';
@@ -90,7 +88,7 @@
     function removeFromRecord(){
         setLoadingModal(true)
             removeGameFromUserRecord()
-            .catch(err => console.log('error removing game data from user record: ', err))
+            .catch(err => Logger(['error removing game data from user record: ', err]))
             .finally(() => {
                 redirect('/')
                 setLoadingModal(false)
@@ -127,7 +125,7 @@
         let isSame = compareUserData(newUserData)
         if(newUserData.id){
             // newUserData.user_metadata.game_id && watchGame(newUserData.user_metadata.game_id)
-            console.log( 'server subs: ', $serverSubscriptions.game )
+            Logger([ 'server subs: ', $serverSubscriptions.game ])
             watchRemoteGame(newUserData)
             updateLocalUser(newUserData)
             updatePath(newUserData)
@@ -140,34 +138,40 @@
 
     async function isPasswordUpdated(newUserData){
         const {data, error} = await checkIfPasswordChanged(newUserData)
-        console.log('$$pwd: ', data)
-        console.log('$$pwd error: ', error)
+        Logger(['$$pwd: ', data])
+        Logger(['$$pwd error: ', error])
         return data[0]
     }
 
     function watch(){
         currentUser.subscribe( async userUpdate => {
             // let isSame = compareUserData(userUpdate)
-            // console.log(`<_layout> detected a ${isSame ? 'same' : 'different'} user: `, userUpdate)
+            // Logger([`<_layout> detected a ${isSame ? 'same' : 'different'} user: `,] userUpdate)
             // handleNewData(userUpdate, isSame)
-            let updatedPassword = !$passwordUpdated && await isPasswordUpdated(userUpdate)
-            console.log('$$pwd updated: ', updatedPassword)
 
-            if(!updatedPassword){
-                updateLocalUser(userUpdate)
-                console.log('$$pwd will show password updater')
-                console.log('$$was auth checked? ', $authChecked)
-                $authChecked && !$showPasswordUpdater && showPasswordUpdater.set(true)
-                console.log('$$SPWU ', $showPasswordUpdater)
+            if(userUpdate.id){
+                let updatedPassword = !$passwordUpdated && await isPasswordUpdated(userUpdate)
+                Logger(['$$pwd updated: ', updatedPassword])
+                if(!updatedPassword){
+                    updateLocalUser(userUpdate)
+                    Logger(['$$pwd will show password updater'])
+                    Logger(['$$was auth checked? ', $authChecked])
+                    $authChecked && !$showPasswordUpdater && showPasswordUpdater.set(true)
+                    Logger(['$$SPWU ', $showPasswordUpdater])
+                }
+                else{
+                    $authChecked && $showPasswordUpdater && showPasswordUpdater.set(false)
+                    handleNewData(userUpdate)
+                }
             }
             else{
-                $authChecked && $showPasswordUpdater && showPasswordUpdater.set(false)
                 handleNewData(userUpdate)
             }
+
         })
 
         currentGame.subscribe(game => {
-            console.log('_layout:: got game subscription: ', game)
+            Logger(['_layout:: got game subscription: ', game])
             if(game && game.game_id){
                 if(
                     activeGame.game_id !== game.game_id
@@ -177,14 +181,14 @@
                     || activeGame.ended !== game.ended
                     || JSON.stringify(activeGame.deck) !== JSON.stringify(game.deck)
                 ){
-                    console.log('_layout:: udpating layouts local game: ', game)
+                    Logger(['_layout:: udpating layouts local game: ', game])
                     activeGame = {...game}
                     // if(game.ended){
                     //     removeFromRecord()
                     // }
                 }
                 else{
-                    console.log('got new game data but was identical to local data. will not update')
+                    Logger(['got new game data but was identical to local data. will not update'])
                 }
             }
             else {
@@ -196,7 +200,7 @@
         })
 
         reloadAfterRedirect.subscribe(shouldReload => {
-            console.log('should reload: ', shouldReload)
+            Logger(['should reload: ', shouldReload])
             if(shouldReload){
                 browser && location.reload()
             }

@@ -1,10 +1,22 @@
 <script lang="ts">
-    import { displayErrorReporter, displayRules, downloadGameData, endGame, leaveGame, setLoadingModal, showMessage, singOut } from "$lib/actions";
+    import { 
+        // deleteTrades,
+        // displayErrorReporter,
+        // displayRules,
+        downloadGameData,
+        // endGame,
+        leaveGame,
+        setLoadingModal, 
+        showMessage, 
+        singOut 
+    } from "$lib/actions";
     import { defaultGame } from "$lib/constants";
     import { currentGame, showEndGameModal, showGameRules } from "$lib/state";
     import type { AppGame } from "$lib/types";
     import AppMenuItem from "./app-menu-item.svelte";
     import fileSaver from 'file-saver'
+    import { Logger } from "$lib/helpers";
+    // import { browser } from "$app/env";
     const {saveAs} = fileSaver
 
     export let hasGame: boolean = false
@@ -13,7 +25,7 @@
     export let isAdmin: boolean = false
 
     function end(){
-        console.log('would end game')
+        // console.log('would end game')
         showEndGameModal.set(true)
     }
 
@@ -26,12 +38,12 @@
         if(game.game_id){
             downloadGameData(game.game_id)
             .then(results => {
-                console.log('got game data: ', results)
+                Logger(['got game data: ', results])
                 let {trades, players} = results
 
                 let findPlayer = (id) => {
                     let pIndex = players.data.findIndex(player => player.user_id === id)
-                    console.log('p index: ', players.data[pIndex])
+                    Logger(['p index: ', players.data[pIndex]])
                     if(pIndex && id){
                         return players.data[pIndex].player_name
                     }
@@ -45,14 +57,14 @@
                     return `${d.getSeconds()}/${d.getMinutes()}/${d.getHours()}`
                 }
 
-                console.log('AAAA')
+                Logger(['AAAA'])
 
                 trades.data.map(trade => {
                     csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)}/n`
                 })
                 
                 // setLoadingModal(false)
-                console.log('output csv: ', csv)
+                Logger(['output csv: ', csv])
 
                 let fileName = `icbs_derivatives_${game.game_id}.csv`
                 let blob = new Blob([csv], {type: 'text/plain;charset=utf8'})
@@ -60,7 +72,7 @@
 
             })
             .catch(err => {
-                console.log('error processing download: ', err)
+                Logger(['error processing download: ', err])
                 showMessage({
                     timestamp: Date.now(),
                     message: `Failed to download game data.`,
@@ -85,6 +97,14 @@
 
     }
 
+    // async function deleteTradesManual(){
+    //     let game_id = $currentGame.game_id
+    //     setLoadingModal(true)
+    //     const result = await deleteTrades(game_id)
+    //     console.log('deleted trades: ', result)
+    //     setLoadingModal(false)
+    // }
+
     $:items = [
         {
             label: 'Sign-out',
@@ -104,18 +124,18 @@
             action: () => showGameRules.set(true),
             condition: true
         },
-        // {
-        //     label: 'Report Issue',
-        //     icon: 'bug',
-        //     action: () => displayErrorReporter(true),
-        //     condition: true
-        // },
         {
             label: 'Download Data',
             icon: 'leave',
             action: () => download(game),
             condition: isAuthenticated && hasGame && game.game_id
         },
+        // {
+        //     label: 'Delete Trades',
+        //     icon: 'bin',
+        //     action: () => deleteTradesManual(),
+        //     condition: browser && location.href.indexOf('localhost') !== -1
+        // },
     ]
 </script>
 
