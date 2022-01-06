@@ -23,6 +23,7 @@ export const defaultUser: SupabaseUser = {
 
 export const defaultGame: AppGame = {
     game_id: '',
+    admin_id: '',
     admin: {
         user_id: "",
         player_name: "",

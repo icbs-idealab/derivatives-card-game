@@ -107,11 +107,11 @@
         max-width: 600px
     } */
 
-    .admin-page {
+    /* .admin-page {
         padding: 0px;
         width: 100%;
         min-height: 100vh;
-    }
+    } */
 
     .admin {
         padding: 40px;

@@ -4,6 +4,7 @@
         // displayErrorReporter,
         // displayRules,
         downloadGameData,
+        getArchives,
         // endGame,
         leaveGame,
         setLoadingModal, 
@@ -11,13 +12,15 @@
         singOut 
     } from "$lib/actions";
     import { defaultGame } from "$lib/constants";
-    import { currentGame, showEndGameModal, showGameRules } from "$lib/state";
+    import { currentGame, currentUser, showArchivesModal, showEndGameModal, showGameRules } from "$lib/state";
     import type { AppGame } from "$lib/types";
     import AppMenuItem from "./app-menu-item.svelte";
     import fileSaver from 'file-saver'
-    import { Logger } from "$lib/helpers";
+    import { Logger, redirect } from "$lib/helpers";
     import { onMount } from "svelte";
     import { page } from "$app/stores";
+    import { browser } from "$app/env";
+    import { get } from "svelte/store";
     // import { browser } from "$app/env";
     const {saveAs} = fileSaver
 
@@ -59,8 +62,6 @@
                     return `${d.getSeconds()}/${d.getMinutes()}/${d.getHours()}`
                 }
 
-                Logger(['AAAA'])
-
                 trades.data.map(trade => {
                     csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)}/n`
                 })
@@ -68,7 +69,7 @@
                 // setLoadingModal(false)
                 Logger(['output csv: ', csv])
 
-                let fileName = `icbs_derivatives_${game.game_id}.csv`
+                let fileName = `icbs_derivatives_${game.game_id}_trades.csv`
                 let blob = new Blob([csv], {type: 'text/plain;charset=utf8'})
                 saveAs(blob, fileName)
 
@@ -103,7 +104,12 @@
         {
             label: 'Sign-out',
             icon: 'logout',
-            action: () => singOut(),
+            action: async () => {
+                setLoadingModal(true)
+                await singOut()
+                redirect('/')
+                setLoadingModal(false)
+            },
             condition: isAuthenticated
         },
         {
@@ -123,6 +129,13 @@
             icon: 'leave',
             action: () => download(game),
             condition: isAuthenticated && hasGame && game.game_id && $page.path !== '/admin'
+        },
+        {
+            label: 'Get Archives',
+            icon: 'archive',
+            // action: () => getArchives($currentUser.id),
+            action: () => showArchivesModal.set(true),
+            condition: $currentUser.id
         },
         // {
         //     label: 'Delete Trades',

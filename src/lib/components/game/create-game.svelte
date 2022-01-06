@@ -76,10 +76,6 @@
 </div>
 
 <style>
-    .button-container {
-        width: 160px;
-    }
-
     .create-game {
         width: 100%;
         display: grid;

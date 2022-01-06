@@ -1,7 +1,6 @@
 <script lang="ts">
-import { afterUpdate } from "svelte";
-
-
+    import { canUpdatePrice } from "$lib/state";
+    import { afterUpdate } from "svelte";
     export let localBuy: number = 0
     export let localSell: number = 0
     export let gameBuy: number = 0
@@ -15,10 +14,14 @@ import { afterUpdate } from "svelte";
 
     let handler = () => {
         // console.log('setting!')
-        canTrade ? 
+        if(canTrade && $canUpdatePrice){
             submit()
-            : showMaxSpreadWarning()
+        }
+        else if(!canTrade && $canUpdatePrice){
+            showMaxSpreadWarning()
+        }
     }
+
 
     $:sellValue = localSell !== null ? localSell : gameSell
     $:buyValue = localBuy !== null ? localBuy : gameBuy
@@ -45,7 +48,7 @@ import { afterUpdate } from "svelte";
     // })
 </script>
 
-<div class="value-setter flex" data-diff={canTrade} on:click={handler}>
+<div class="value-setter flex" data-diff={canTrade && $canUpdatePrice} on:click={handler}>
     <p>Set</p>
 </div>
 

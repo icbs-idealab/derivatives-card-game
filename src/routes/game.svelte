@@ -422,15 +422,23 @@
                 <p>Please check (with your game admin if necessary) that the game-id used is correct and try again by clicking the 'leave game' button at the bottom of your screen.</p>
             </div>
         </div>
+    {:else if exists && $currentGame.game_id && (!inLobby || !haveRequiredRoles)}
+        <div class="loading-lobby flex">
+            <div class="loading-lobby-inner flex fd-col">
+                <h1>This Game has ended</h1>
+                <p>You may still download the game data using the <b>Get Archives</b> link below.</p>
+                <!-- <div class="is-loading loading-line"></div> -->
+            </div>
+        </div>
     {:else}
-        <!-- <ul class="lobby-details">
+        <ul class="lobby-details">
             <li>waiting for game data</li>
             <li>exists: {exists}</li>
             <li>game id: {$currentGame.game_id}</li>
             <li>Required Roles: {haveRequiredRoles}</li>
             <li>Playable: {playable}</li>
             <li>In Lobby: {inLobby}</li>
-        </ul> -->
+        </ul>
 
         <div class="loading-lobby flex">
             <div class="loading-lobby-inner flex fd-col">

@@ -44,11 +44,6 @@ import { get } from "svelte/store";
 </div>
 
 <style>
-
-    .button-container {
-        width: 160px;
-    }
-
     .login {
         width: 100%;
         display: grid;

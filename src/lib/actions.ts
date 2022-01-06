@@ -3,7 +3,7 @@ import { get } from "svelte/store"
 import { allRoleNames, defaultGame, defaultUser, playerRevealRounds } from "./constants"
 import { buildShuffledDeck, Logger, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked, showAppMessage } from "./state"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked, showAppMessage, playersChecked, gameChecked, tradesChecked } from "./state"
 import type { AppGamePlayers, MessageParams, NewGameProps, SupabaseUser } from "./types"
 import {nanoid} from 'nanoid'
 
@@ -126,9 +126,9 @@ export const signIn = async (email: string, password: string) => {
 export const singOut = async () => {
     let { error } = await supabase.auth.signOut()
     if(!error){
-        updateActiveUser(null)
+        updateActiveUser(defaultUser)
     }
-    return { error}
+    return { error, success: !error }
 }
 
 // PLAYER
@@ -165,7 +165,7 @@ export const getPlayerData = async (game_id: string) => {
         .eq('game_id', game_id)
 
     Logger(['player data: ', data])
-
+    playersChecked.set(true)
     return {data, error, success: !error}
 }
 
@@ -394,6 +394,12 @@ export async function joinLobby(game_id, player){
 
 // GAME
 
+export const getArchives = async (user_id) => {
+    return await supabase.from('archives')
+    .select()
+    .textSearch('participants', user_id)
+} 
+
 export const createNewGame = async ({user, creatorRole, maximumSpread, playerName}: NewGameProps) => {
     setLoadingModal(true)
 
@@ -402,6 +408,7 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
     const newGame = {
         ...defaultGame,
         game_id,
+        admin_id: user.id,
         admin: {
             user_id: user.id,
             game_id,
@@ -647,6 +654,7 @@ export const endGame = async () => {
             game: gameData,
             players: playerData,
             trades: tradeData,
+            game_id: gameData.game_id
         }
     
         let archiveResult = await archiveGame(archive)
@@ -721,6 +729,7 @@ export async function getGame(game_id){
         noSuchGame.set(true)
     }
 
+    gameChecked.set(true)
     return {data, error}
 }
 
@@ -880,6 +889,7 @@ export async function getTrades(game_id: string){
     else{
         gameTrades.set(data)
     }
+    tradesChecked.set(true)
     return {data, error}
 }
 

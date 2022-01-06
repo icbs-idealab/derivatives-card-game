@@ -81,11 +81,19 @@ export function makeGamePlayers(params?): AppGamePlayers {
     else return allRoleNames.map(role => ({...defaultGamePlayer}))
 }
 
-export function makeGamePlayersAsObject(){
+export function makeGamePlayersAsObject(sourceArray?: any){
     let players = {}
-    allRoleNames.map(role => {
-        players[role] = {...defaultGamePlayer}
-    })
+    // let use = sourceArray || allRoleNames
+    if(sourceArray){
+        sourceArray.map(player => {
+            players[player.role] = {...player}
+        })
+    }
+    else{
+        allRoleNames.map(role => {
+            players[role] = {...defaultGamePlayer}
+        })
+    }
     return players
 }
 
