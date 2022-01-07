@@ -570,6 +570,10 @@ export async function updateGame(updateValue){
     let game = get(currentGame)
     let {game_id} = game
     if(game_id){
+        // let record = await supabase.from('game')
+        // .select('*')
+        // .eq('game_id', game_id)
+
         let {data, error} = await supabase
             .from(`games`)
             .update(updateValue)

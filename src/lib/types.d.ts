@@ -280,3 +280,5 @@ export interface GameArchive {
     trades: string
     participants: string
 }
+
+export type GameEndState = 'Game Completed' | 'Game Ended' | ''

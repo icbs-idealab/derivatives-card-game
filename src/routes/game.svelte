@@ -25,6 +25,7 @@
     let playerRole = ''
     let currentPlayer = get(currentUser)
     let balance = 0
+    let revealRoundIntervalCheck = null
 
     let revealRoundState: SuitReveals = getReveals(players)
 
@@ -250,7 +251,7 @@
 
         // calc player scores
         let fPlayers = get(gamePlayers)
-        let playerResults: {[index: string]: {balance: number, final: number, contracts: any}} = {}
+        let playerResults: {[index: string]: {balance: number, contracts: any, lastRevealed: string}} = {}
 
         let allTrades = get(gameTrades)
         for(let player in fPlayers){
@@ -263,7 +264,8 @@
             playerResults[player] = {
                 balance: inventory.balance,
                 contracts: inventory.contracts,
-                final: inventory.balance + (inventory.contracts[lastRevealed] * 100)
+                lastRevealed,
+                // final: inventory.balance + (inventory.contracts[lastRevealed] * 100)
             }
 
 
@@ -307,11 +309,14 @@
                 && triggerGameRoundDisplay()
 
             game = newGame
+            
+            
             if(playerRevealRounds[newGame.round]){
                 revealRoundState = getReveals(players)
                 setTimeout(() => {
                     showRevealRound = playerRevealRounds[game.round] && !hasAll(revealRoundState)
                 })
+                checkRevealRound(newGame, players)
             }
         }
 
@@ -323,13 +328,98 @@
         }
     })
 
+
+    function updateReveals(newPlayers){
+        console.log('$R$ syncing reveals... ', revealRoundState)
+        if(hasAll(revealRoundState)){
+            clearRevealInterval()
+        }
+        else{
+            let reveals = getReveals(newPlayers)
+            for(let rev in reveals){
+                reveals[rev] && !revealRoundState[rev] && (revealRoundState[rev] = reveals[rev])
+            }
+        }
+    }
+
+    function checkRevealRound(_game =  game, _players = players){
+        if(playerRevealRounds[game.round]){
+            console.log('$R$ state?:: ', revealRoundState)
+
+            if(!hasAll(revealRoundState)){
+                console.log('$R$ before init: ', revealRoundIntervalCheck)
+                if(!revealRoundIntervalCheck){
+                    console.log('$R$ no revealRound interval check')
+                    updateReveals(_players)
+                    // revealRoundState = getReveals(_players)
+                    console.log('setting interval')
+                    revealRoundIntervalCheck = setInterval(() => {
+                        // revealRoundState = getReveals(_players)
+                        updateReveals(_players)
+                    }, 4000)
+                }
+                else{
+                    // revealRoundState = getReveals(_players)
+                    updateReveals(_players)
+                }
+            }
+            else{
+                console.log('$R$ has all:: ', revealRoundState)
+                clearRevealInterval()
+            }
+
+        }
+        else{
+            clearRevealInterval()
+            // clearInterval(revealRoundIntervalCheck)
+            // revealRoundIntervalCheck = null
+            // console.log('$R$ cleared interval()! ', revealRoundIntervalCheck)
+        }
+
+    }
+
+    function clearRevealInterval(){
+        clearInterval(revealRoundIntervalCheck)
+        // revealRoundIntervalCheck = null
+        console.log('$R$ cleared interval()! ', revealRoundIntervalCheck)
+    }
+
     gamePlayers.subscribe(newPlayers => {
         Logger(['got game players: ', newPlayers])
         setPlayers(newPlayers)
         checkRequiredRoles(newPlayers)
-        if(playerRevealRounds[game.round]){
-            revealRoundState = getReveals(newPlayers)
-        }
+
+        checkRevealRound(game, newPlayers)
+
+        // if(playerRevealRounds[game.round]){
+        //     console.log('$R$ state?:: ', revealRoundState)
+
+        //     if(!hasAll(revealRoundState)){
+        //         if(!revealRoundIntervalCheck){
+        //             console.log('$R$ no revealRound interval check')
+        //             updateReveals(newPlayers)
+        //             // revealRoundState = getReveals(newPlayers)
+        //             revealRoundIntervalCheck = setInterval(() => {
+        //                 // revealRoundState = getReveals(newPlayers)
+        //                 updateReveals(newPlayers)
+        //             }, 4000)
+        //         }
+        //         else{
+        //             // revealRoundState = getReveals(newPlayers)
+        //             updateReveals(newPlayers)
+        //         }
+        //     }
+        //     else{
+        //         console.log('$R$ somehow has all?:: ', revealRoundState)
+        //     }
+
+        // }
+        // else{
+        //     clearInterval(revealRoundIntervalCheck)
+        //     revealRoundIntervalCheck = null
+        //     console.log('$R$ cleared interval()! ', revealRoundIntervalCheck)
+        // }
+        
         if(!playerRole){
             calcPlayerRole()
         }
@@ -402,6 +492,7 @@
                 revealsForRound={revealRoundState}
                 nextRound={goToNextRound}
                 lastRevealed={lastRevealed}
+                clearRevealInterval={clearRevealInterval}
             />
 
             <!-- <div class="div flex" style="position:fixed; top: 50px; right: 50px; font-size: 0.65em;">
@@ -413,6 +504,7 @@
     {:else if exists && inLobby && !haveRequiredRoles}
         <Lobby 
             haveRequiredRoles={haveRequiredRoles}
+            adminId={$currentGame.admin_id}
         />
     {:else if $noSuchGame}
         <div class="no-such-game flex">

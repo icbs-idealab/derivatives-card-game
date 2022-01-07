@@ -91,6 +91,10 @@ p {
     margin: 0;
 }
 
+.text-1{ font-size: 0.925em;}
+.text-2{ font-size: 1.15em;}
+.text-3{ font-size: 1.333em;}
+
 a {
     /* color: var(--accent-color); */
     text-decoration: none;
@@ -245,6 +249,9 @@ a {
 }
 .jc-around {
     justify-content: space-around;
+}
+.ai-stretch {
+    align-items: stretch;
 }
 
 .fd-col {

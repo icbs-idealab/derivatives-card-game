@@ -10,6 +10,7 @@
     import { canTrade, canUpdatePrice } from "$lib/state";
     import { updatePlayerPrices } from "$lib/actions";
     
+    export let gameRound: number = 0
     export let gameActive: boolean = false
     export let isLastRevealed: boolean = false
     export let isActivePlayer = false
@@ -91,7 +92,7 @@
             <BuySellControls 
                 buy={roleData.buy}
                 sell={roleData.sell}
-                disabled={!canTradeState[suit] || !gameActive}
+                disabled={!canTradeState[suit] || !gameActive || gameRound === 33}
                 suit={suit}
             />
         {/if}

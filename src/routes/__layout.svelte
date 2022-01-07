@@ -45,7 +45,6 @@
             hasGame={activeUser.user_metadata.game_id}
             game={activeGame}
             isAuthenticated={activeUser.id !== null}
-            isAdmin={activeUser.user_metadata.admin}
         />
     {/if}
 
@@ -242,7 +241,6 @@ import LoadingText from '$lib/components/app/loading-text.svelte';
     onMount(() => {
         // setLoadingModal(true)
         watch()
-
         // let clipboard = new ClipboardJS('.copy-icon')
         // clipboard.on('success', () => {
         //     showCoppied = true

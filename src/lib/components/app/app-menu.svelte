@@ -27,7 +27,6 @@
     export let hasGame: boolean = false
     export let game: Partial<AppGame> = {...defaultGame}
     export let isAuthenticated: boolean = false
-    export let isAdmin: boolean = false
 
     function end(){
         // console.log('would end game')
@@ -161,7 +160,7 @@
         {/if}
     {/each}
 
-    {#if isAdmin && $currentGame.game_id && !$currentGame.ended}
+    {#if $currentGame.admin_id === $currentUser.id && $currentGame.game_id && !$currentGame.ended}
         <li class="end-game-button">
             <AppMenuItem
                 color="var(--lm-lighter)"

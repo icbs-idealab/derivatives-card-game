@@ -11,13 +11,14 @@
     import { Logger, makeGamePlayers } from "$lib/helpers";
     import { get } from "svelte/store";
     import Icon from "../icon/icon.svelte";
+    import type { AppGame } from "$lib/types";
 
+    export let adminId: string = ''
     export let haveRequiredRoles: boolean = false;
     let defaultGamePlayers = makeGamePlayers()
     let localLobby = []
     let localGamePlayers = $gamePlayers
     let localUser = $currentUser
-    $:isAdmin = localUser.user_metadata && localUser.user_metadata.admin
 
 
     // filtered list of players that should be included in the player selection list
@@ -91,6 +92,8 @@
         player_name: "",
         game_id: "",
     }
+
+    $:isAdmin = localUser.id && localUser.id === adminId
 
     gamePlayers.subscribe(newGamePlayers => {
         Logger(['got new game players in <Lobby /> ', newGamePlayers])
@@ -220,7 +223,7 @@
                         size={30}
                     />
                 </div>
-                <div class="selector-main">
+                <div class="selector-main" data-is-admin={isAdmin} data-admin={adminRole.role}>
                     {#if listReady && isAdmin && adminRole.role !== role}
                         <LobbyPlayerSelector
                             players={filtered} 
