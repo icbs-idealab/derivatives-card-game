@@ -66,6 +66,10 @@
     const admins = {
         'winger.shane@gmail.com': true,
         'shane@fulcrum.house': true,
+        'info@fulcrum.house': true,
+        'hello@shanedexter.me': true,
+        'dev@shanedexter.me': true,
+        'work@shanedexter.me': true,
         'p.tulip@imperial.ac.uk': true,
     }
 

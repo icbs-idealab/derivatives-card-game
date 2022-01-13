@@ -65,7 +65,7 @@ export const checkIfPasswordChanged = async (user) => {
     return await supabase
         .from('password-changed')
         .select("*")
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .limit(1)
 }
 
@@ -80,7 +80,7 @@ export const updatePassword = async (password: string) => {
     if(returnObject.user.data){
         returnObject.supabase = await supabase
             .from('password-changed')
-            .insert([{user_id: returnObject.user.data.id}])
+            .insert([{id: returnObject.user.data.id}])
             .select("*")
 
         currentUser.set(returnObject.user)
@@ -654,11 +654,28 @@ export const endGame = async () => {
         let playerData = await getPlayerData(game.game_id)
         let {data: tradeData} = await getTrades(game.game_id)
     
+        let participants = []
+
+        playerData.data && playerData.data.forEach(p => {
+            if(p.user_id){
+                participants.push(p.user_id)
+            }
+        })
+        // for(let p in playerData.data){
+        //     // console.log('player: ', p, playerData)
+        //     if(playerData[p] && playerData[p].user_id){
+        //         participants.push(playerData[p].user_id)
+        //     }
+        // }
+
+        console.log('$participants$: ', participants)
+
         let archive = {
             game: gameData,
             players: playerData,
             trades: tradeData,
-            game_id: gameData.game_id
+            game_id: gameData.game_id,
+            participants: participants.join('_')
         }
     
         let archiveResult = await archiveGame(archive)
@@ -789,7 +806,7 @@ function parseGameData(data){
     Logger(['parsing game data: ', data])
     return {
         ...data,
-        admin: JSON.parse(data.admin)
+        admin: typeof data.admin === 'string' ? JSON.parse(data.admin) : data.admin
     }
 }
 

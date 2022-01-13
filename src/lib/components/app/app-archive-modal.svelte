@@ -52,12 +52,19 @@
     }
 
     function parseArchives(list){
+        // let ids = {}
+        // let usable = []
+        // list.forEach((arch) => {
+        //     if( !ids[arch.game_id] ){
+        //         usable.push(arch)
+        //         ids[arch.game_id] = true
+        //     }
+        //     console.log('$ids$: ', ids)
+        // })
+
         return list.map(arch => {
-            // let players = makeGamePlayersAsObject(arch.players.data)
             let mapped = {
                 ...arch,
-                // game_id: arch.game_id,
-                // game: JSON.parse(arch.game),
                 players: arch.players.data,
                 mappedPlayers: makeGamePlayersAsObject(arch.players.data),
                 // trades: JSON.parse(arch.trades),
@@ -114,10 +121,10 @@
                     player.game_id,
                     player.role,
                     player.player_name || 'n/a',
-                    player.hand ? hand.clubs : '/na',
-                    player.hand ? hand.diamonds : '/na',
-                    player.hand ? hand.hearts : '/na',
-                    player.hand ? hand.spades : '/na',
+                    player.hand ? hand.clubs : 'n/a',
+                    player.hand ? hand.diamonds : 'n/a',
+                    player.hand ? hand.hearts : 'n/a',
+                    player.hand ? hand.spades : 'n/a',
                     player.revealed ? player.revealed['1'] || 'n/a' : 'n/a',
                     player.revealed ? player.revealed['6'] || 'n/a' : 'n/a',
                     player.revealed ? player.revealed['11'] || 'n/a' : 'n/a',
@@ -190,7 +197,7 @@
                     <div>Trades</div>
                     <div>Downloads</div>
                 </li>
-                {#each [...localArchives, ...localArchives] as arch}
+                {#each [...localArchives] as arch}
                     <li class="archive-entry">
                         <div>{arch.game_id}</div>
                         <div>{parseDate(arch.game.created_at)}</div>
