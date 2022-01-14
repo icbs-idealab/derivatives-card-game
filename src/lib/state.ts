@@ -9,10 +9,11 @@ import { Logger } from "./helpers";
 
 
 // CONSOLIDATED APP STATE
+export const showArchivesModal = writable(false)
+export const archives = writable([])
 
 export const appMessage = writable(defaultErrorMessage)
 export const showAppMessage = writable(false)
-
 export const showErrorReporter = writable(false)
 export const appErrors = writable([] as AppErrors[])
 export const noSuchGame = writable(false)
@@ -80,7 +81,6 @@ export function makePlayers(): AppGamePlayers {
 export const gamePlayers = writable(makePlayers())
 
 // GAME
-
 export const lobbyRequirements = writable({
     gamePlayers: null,
     lobbyPlayers: null,
@@ -95,6 +95,9 @@ export const currentGame = writable({...defaultGame},
         if(activeUser && activeUser.user_metadata && activeUser.user_metadata.game_id){
             getAndWatchGame(activeUser.user_metadata.game_id)
         }
+        else {
+            gameChecked.set(true)
+        }
     }
 )
 
@@ -107,7 +110,7 @@ export const canTrade = writable({
     spades: true,
 })
 
-export let canUpdatePrice = writable(false)
+export let canUpdatePrice = writable(true)
 
 // LOADING / MODAL
 
@@ -142,3 +145,8 @@ export const localSubscriptions = writable({
 
 // RELOAD PAGE
 export let reloadAfterRedirect = writable(false)
+
+// fix 
+export const gameChecked = writable(false)
+export const tradesChecked = writable(false)
+export const playersChecked = writable(false)

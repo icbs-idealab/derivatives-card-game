@@ -1,11 +1,11 @@
 <main data-ui-mode={ui}>
-    {#if $authChecked}
+    {#if $authChecked && $gameChecked}
         <RedirectHandler>
             <slot />
         </RedirectHandler>
     {:else}
         <div class="checking-auth flex">
-            <h1>loading</h1>
+            <LoadingText loadingText="Authenticating" />
         </div>
     {/if}
 
@@ -14,9 +14,11 @@
     {#if $page.path !== '/admin'}
         <div class="user-details">
             <div class="current-game flex jc-start">
-                <p>Game ID: 
-                    <span><b id="target">{activeGame.game_id}</b></span>
-                </p>
+                {#if activeGame.game_id}
+                    <p>Game ID: 
+                        <span><b id="target">{activeGame.game_id}</b></span>
+                    </p>
+                {/if}
                 <!-- <div 
                     class="copy-icon" 
                     data-hide={!activeGame.game_id}
@@ -27,10 +29,12 @@
                 </div>
                 <div class="copied" data-show={showCoppied}>Copied!</div> -->
             </div>
-            <div class="current-user">
-                <!-- <p>UID: <span>{activeUser.id}</span> </p> -->
-                <p>Email: <span>{activeUser.email}</span> </p>  
-            </div>
+            {#if activeUser.email}
+                <div class="current-user">
+                    <!-- <p>UID: <span>{activeUser.id}</span> </p> -->
+                    <p>Email: <span>{activeUser.email}</span> </p>  
+                </div>
+            {/if}
         </div>
     {/if}
 
@@ -41,7 +45,6 @@
             hasGame={activeUser.user_metadata.game_id}
             game={activeGame}
             isAuthenticated={activeUser.id !== null}
-            isAdmin={activeUser.user_metadata.admin}
         />
     {/if}
 
@@ -53,8 +56,12 @@
         <EndGameModal />
     {/if}
 
-    {#if $showPasswordUpdater}
+    <!-- {#if $showPasswordUpdater}
         <UpdatePassword />
+    {/if} -->
+
+    {#if $showArchivesModal}
+        <AppArchiveModal />
     {/if}
 
     {#if $showAppMessage}
@@ -77,7 +84,7 @@
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { Logger, redirect } from "$lib/helpers";
-    import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage} from "$lib/state";
+    import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage, gameChecked, showArchivesModal} from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
@@ -86,10 +93,12 @@
     import { browser } from '$app/env';
     import EndGameModal from '$lib/components/app/end-game-modal.svelte';
     import AppRules from '$lib/components/app/app-rules.svelte';
-    import UpdatePassword from '$lib/components/auth/update-password.svelte';
-    import ClipboardJS from 'clipboard'
-    import Icon from '$lib/components/icon/icon.svelte';
-import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
+    // import UpdatePassword from '$lib/components/auth/update-password.svelte';
+    // import ClipboardJS from 'clipboard'
+    // import Icon from '$lib/components/icon/icon.svelte';
+    import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
+    import AppArchiveModal from '$lib/components/app/app-archive-modal.svelte';
+    import LoadingText from '$lib/components/app/loading-text.svelte';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'
@@ -178,7 +187,8 @@ import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
                     updateLocalUser(userUpdate)
                     Logger(['$$pwd will show password updater'])
                     Logger(['$$was auth checked? ', $authChecked])
-                    $authChecked && !$showPasswordUpdater && showPasswordUpdater.set(true)
+                    // $authChecked && !$showPasswordUpdater && showPasswordUpdater.set(true)
+                    $authChecked && !$showPasswordUpdater && redirect('/update-password')
                     Logger(['$$SPWU ', $showPasswordUpdater])
                 }
                 else{
@@ -230,8 +240,8 @@ import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
     }
 
     onMount(() => {
+        // setLoadingModal(true)
         watch()
-
         // let clipboard = new ClipboardJS('.copy-icon')
         // clipboard.on('success', () => {
         //     showCoppied = true
@@ -245,8 +255,10 @@ import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
 
     })
 
+    let nonRedirectPaths = ['/', 'admin', '/update-password']
+
     afterUpdate(() => {
-        if(authChecked && !activeUser.id && $page.path !== '/' && $page.path !== '/admin'){
+        if(authChecked && !activeUser.id && nonRedirectPaths.indexOf($page.path) === -1){
             redirect('/')
         }
     })
@@ -264,10 +276,10 @@ import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
         padding: 5vw;
     }
 
-    .checking-auth h1 {
+    /* .checking-auth h1 {
         font-size: 1.28em;
         font-weight: 100;
-    }
+    } */
 
     .user-details {
         position: fixed;

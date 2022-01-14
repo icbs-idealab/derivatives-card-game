@@ -1,8 +1,10 @@
 <script lang="ts">
-    import { revealPlayerCard } from "$lib/actions";
+    import { getTrades, revealPlayerCard } from "$lib/actions";
     import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
-    import { Logger, makeGamePlayersAsObject } from "$lib/helpers";
-    import type { AppGame } from "$lib/types";
+    import { calculatePlayerInventory, getRelevantTrades, Logger, makeGamePlayersAsObject } from "$lib/helpers";
+    import { currentGame, currentUser, gameTrades } from "$lib/state";
+    import type { AppGame, GameEndState } from "$lib/types";
+    import { get } from "svelte/store";
     import Backdrop from "../app/backdrop.svelte";
     import Button from "../button/button.svelte";
     import GameProperties from "./game-properties.svelte";
@@ -32,15 +34,56 @@
     export let startGame: () => any = () => console.log('init')
     export let finishGame: () => any = () => console.log('end game')
     export let nextRound: () => any = () => console.log('next round')
-    
+    export let clearRevealInterval: () => void = () => null
+
     function withSymbol(val){
         let symbol = val < 0 ? '-' : ''
-        return `${symbol}$${Math.abs(val/100)}`
+        let stringVal: any = String(val)
+        let append = stringVal[stringVal.length-1] === '0' && stringVal !== '0' ? '0' : ''
+
+        return `${symbol}$${Math.abs(val/100)}${append}`
     }
+
+    async function getFinal(game_id){
+        if(game_id){
+            const {data} = await getTrades(game_id)
+            if(Array.isArray(data)){
+                let relevant = getRelevantTrades(data, get(currentUser).id, playerRole)
+                let {contracts, balance} = calculatePlayerInventory(relevant, playerRole)
+                // count bonus
+                let last = ''
+                for(let l in lastRevealed){
+                    if(lastRevealed[l]){
+                        last = l
+                    }
+                }
+                let count = contracts[last]
+                let bonus = count * 100
+                //
+                derivedFinalBalance = withSymbol(balance + bonus)
+            }
+        }
+    }
+
+    currentGame.subscribe((update) => {
+        update.game_id 
+        && update.completed 
+        && getFinal(game.game_id)
+
+    })
 
 
     $:derivedBalance = withSymbol(balance)
-    $:derivedFinalBalance = playerRole && game && game.final_scores ? withSymbol(game.final_scores[playerRole].final) : ''
+    // $:derivedFinalBalance = playerRole && game && game.final_scores ? withSymbol(game.final_scores[playerRole].final) : ''
+    // $:final = await getFinal()
+    let derivedFinalBalance = null
+    // $:derivedFinalBalance = playerRole 
+    //     && game 
+    //     && game.game_id
+    //     && game.completed ? 
+    //         getFinal(game.game_id) 
+    //         : ''
+    // $:derivedFinalBalance = derivedBalance
     
     function calcHand(players, playerRole){
         if(playerRole){
@@ -63,14 +106,24 @@
 
     $:playerCards = playerRole ? (players[playerRole].hand || emptyHand) : emptyHand
     $:playerReveals = playerRole ? (players[playerRole].revealed || emptyReveals) : emptyReveals
-    // $:hand = calcHand(playerCards, playerReveals)
     $:hand = calcHand(players, playerRole)
 
-    let processingCardSelection = false
+    $:endState = game.ended && game.round === 33 ? 
+        'Game Completed' : 
+            game.ended && game.round !== 33 ? 
+                'Game Ended'
+                : '' as GameEndState
+
+
+    
+                let processingCardSelection = false
+    
     let selectedCard = ''
+
     function selectCardForReaval(card){
         selectedCard = card
     }
+
     function revealSelectedCard(){
         if(playerRole && players[playerRole]){
             processingCardSelection = true
@@ -87,6 +140,7 @@
             )
             .then(res => {
                 Logger(['successfully revealed card: ', res])
+                clearRevealInterval()
             })
             .catch(err => {
                 Logger(['error revealing card: ', err])
@@ -101,11 +155,6 @@
         buy: 36,
         sell: 40,
     }
-
-    // export let serverRates = {
-    //     buy: 42,
-    //     sell: 38,
-    // }
     
     let canTrade = {
         clubs: true,
@@ -119,6 +168,7 @@
     <div class="game-output">
         <GameProperties 
             round={game.round}
+            endState={endState}
             players={players}
         />
         <SectionLabels />
@@ -151,6 +201,7 @@
                             roleData={players[role]}
                             localRates={localRates}
                             suit={role}
+                            gameRound={game.round}
                             gameActive={game.started && !game.ended}
                             playerCards={playerCards}
                             contracts={contracts[role]}
@@ -190,7 +241,7 @@
 
                     <div class="balance flex fd-col">
                         <p>Balance: { derivedBalance }</p>
-                        {#if game.final_scores}
+                        {#if derivedFinalBalance !== null}
                             <p>Final Balance: { derivedFinalBalance }</p>
                         {/if}
                     </div>

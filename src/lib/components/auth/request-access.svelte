@@ -35,11 +35,6 @@
 </div>
 
 <style>
-
-    .button-container {
-        width: 160px;
-    }
-
     .request-access {
         width: 100%;
         display: grid;

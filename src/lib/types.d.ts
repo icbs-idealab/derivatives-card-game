@@ -59,6 +59,7 @@ type rateName = 'clubs_rate' | 'diamonds_rate' | 'hearts_rate' | 'spades_rate'
 export interface AppGame {
     id?: string // optional as only present in the supabase record
     game_id: string
+    admin_id: string
     admin: {
         user_id: string
         player_name: string
@@ -271,3 +272,13 @@ export interface MessageParams {
     message: string
     params?: string
 }
+
+export interface GameArchive {
+    game_id: string
+    game: string
+    players: string
+    trades: string
+    participants: string
+}
+
+export type GameEndState = 'Game Completed' | 'Game Ended' | ''

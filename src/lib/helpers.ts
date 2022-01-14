@@ -36,6 +36,40 @@ export function getRelevantTrades(tradeList, userId, playerRole){
     })
 }
 
+export function calculatePlayerInventory(_trades, targetRole?){
+    let testRole = targetRole
+    let contracts = {...emptyHand}
+    let balance = 0
+    let tradeMultipliers = {
+        buy: 1,
+        sell: -1,
+    }
+    let balanceMultipliers = {
+        buy: -1,
+        sell: 1,
+    }
+
+    _trades.map((trade) => {
+        // contracts[trade.market] += tradeMultipliers[trade.type]
+        contracts[trade.market] += trade.market === testRole ?
+            // invert action since player loses contract to buying player and gains from seller
+            (tradeMultipliers[trade.type] * -1) 
+            // else add buys, subtract sales
+            : tradeMultipliers[trade.type]
+
+        
+        // balance += (balanceMultipliers[trade.type] * trade.price)
+        balance += trade.market === testRole ?
+            // player gains money from trades with type buy if of the same market as they are being 'sold' to the player
+            (balanceMultipliers[trade.type] * -1) * trade.price
+            // else affect is inverted
+            : balanceMultipliers[trade.type] * trade.price
+    })
+
+    return {contracts, balance}
+}
+
+
 export function findGamePlayerById(){
     let user = get(currentUser)
 
@@ -81,11 +115,19 @@ export function makeGamePlayers(params?): AppGamePlayers {
     else return allRoleNames.map(role => ({...defaultGamePlayer}))
 }
 
-export function makeGamePlayersAsObject(){
+export function makeGamePlayersAsObject(sourceArray?: any){
     let players = {}
-    allRoleNames.map(role => {
-        players[role] = {...defaultGamePlayer}
-    })
+    // let use = sourceArray || allRoleNames
+    if(sourceArray){
+        sourceArray.map(player => {
+            players[player.role] = {...player}
+        })
+    }
+    else{
+        allRoleNames.map(role => {
+            players[role] = {...defaultGamePlayer}
+        })
+    }
     return players
 }
 

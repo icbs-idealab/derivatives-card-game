@@ -5,7 +5,7 @@
   export let action;
   export let disabled: boolean = false;
   export let icon = '';
-  export let fill: boolean = true;
+  export let fill: boolean = false;
   function handleClick() {
     if (action && typeof action === "function") {
       action();

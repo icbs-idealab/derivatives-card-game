@@ -66,6 +66,10 @@
     const admins = {
         'winger.shane@gmail.com': true,
         'shane@fulcrum.house': true,
+        'info@fulcrum.house': true,
+        'hello@shanedexter.me': true,
+        'dev@shanedexter.me': true,
+        'work@shanedexter.me': true,
         'p.tulip@imperial.ac.uk': true,
     }
 
@@ -107,11 +111,11 @@
         max-width: 600px
     } */
 
-    .admin-page {
+    /* .admin-page {
         padding: 0px;
         width: 100%;
         min-height: 100vh;
-    }
+    } */
 
     .admin {
         padding: 40px;

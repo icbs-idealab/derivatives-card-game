@@ -91,6 +91,10 @@ p {
     margin: 0;
 }
 
+.text-1{ font-size: 0.925em;}
+.text-2{ font-size: 1.15em;}
+.text-3{ font-size: 1.333em;}
+
 a {
     /* color: var(--accent-color); */
     text-decoration: none;
@@ -136,14 +140,14 @@ input, textarea {
     background: transparent;
     outline: none;
     /* font-size: 0.8em; */
-    font-size: 1em;
+    font-size: 0.925em;
 }
 
 input::placeholder,
 textarea::placeholder {
     font-family: var(--font);
     font-weight: 100!important;
-    font-size: 0.85em;
+    font-size: 0.85em!important;
     color: inherit!important
 }
 
@@ -198,6 +202,27 @@ a {
     color: var(--blue);
 }
 
+.fill {
+    height: 100%;
+    width: 100%;
+}
+
+.stretch-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.bg-dark-modal {
+    background: rgba(238, 238, 238, 0.875);
+}
+
+.bg-light-gray {
+    background: lightgray;
+}
+
 .flex {
     display: flex;
     justify-content: center;
@@ -224,6 +249,9 @@ a {
 }
 .jc-around {
     justify-content: space-around;
+}
+.ai-stretch {
+    align-items: stretch;
 }
 
 .fd-col {
