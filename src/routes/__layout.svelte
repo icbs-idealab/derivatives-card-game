@@ -56,9 +56,9 @@
         <EndGameModal />
     {/if}
 
-    {#if $showPasswordUpdater}
+    <!-- {#if $showPasswordUpdater}
         <UpdatePassword />
-    {/if}
+    {/if} -->
 
     {#if $showArchivesModal}
         <AppArchiveModal />
@@ -93,9 +93,9 @@
     import { browser } from '$app/env';
     import EndGameModal from '$lib/components/app/end-game-modal.svelte';
     import AppRules from '$lib/components/app/app-rules.svelte';
-    import UpdatePassword from '$lib/components/auth/update-password.svelte';
-    import ClipboardJS from 'clipboard'
-    import Icon from '$lib/components/icon/icon.svelte';
+    // import UpdatePassword from '$lib/components/auth/update-password.svelte';
+    // import ClipboardJS from 'clipboard'
+    // import Icon from '$lib/components/icon/icon.svelte';
     import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
     import AppArchiveModal from '$lib/components/app/app-archive-modal.svelte';
     import LoadingText from '$lib/components/app/loading-text.svelte';
