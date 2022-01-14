@@ -151,6 +151,7 @@
     import { Logger, redirect } from "$lib/helpers";
     import { currentUser, showPasswordUpdater } from "$lib/state";
     import { browser } from "$app/env";
+import { page } from "$app/stores";
     let editingPassword = true
     let completed = false
     let newPassword: string = ""
@@ -199,9 +200,9 @@
         .then((result) => {
             completed = true
             Logger(['success! updated password: ', result])
-            // setTimeout(() => {
-            //     currentUser.set(result.user.data)
-            // }, 3000)
+            if($page.path === '/update-password'){
+                redirect('/')
+            }
         })
         .catch((err) => {
             Logger(['error updating password: ', err])

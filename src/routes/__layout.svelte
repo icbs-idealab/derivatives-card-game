@@ -98,7 +98,7 @@
     import Icon from '$lib/components/icon/icon.svelte';
     import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
     import AppArchiveModal from '$lib/components/app/app-archive-modal.svelte';
-import LoadingText from '$lib/components/app/loading-text.svelte';
+    import LoadingText from '$lib/components/app/loading-text.svelte';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'
@@ -187,7 +187,8 @@ import LoadingText from '$lib/components/app/loading-text.svelte';
                     updateLocalUser(userUpdate)
                     Logger(['$$pwd will show password updater'])
                     Logger(['$$was auth checked? ', $authChecked])
-                    $authChecked && !$showPasswordUpdater && showPasswordUpdater.set(true)
+                    // $authChecked && !$showPasswordUpdater && showPasswordUpdater.set(true)
+                    $authChecked && !$showPasswordUpdater && redirect('/update-password')
                     Logger(['$$SPWU ', $showPasswordUpdater])
                 }
                 else{
@@ -254,8 +255,10 @@ import LoadingText from '$lib/components/app/loading-text.svelte';
 
     })
 
+    let nonRedirectPaths = ['/', 'admin', '/update-password']
+
     afterUpdate(() => {
-        if(authChecked && !activeUser.id && $page.path !== '/' && $page.path !== '/admin'){
+        if(authChecked && !activeUser.id && nonRedirectPaths.indexOf($page.path) === -1){
             redirect('/')
         }
     })
@@ -273,10 +276,10 @@ import LoadingText from '$lib/components/app/loading-text.svelte';
         padding: 5vw;
     }
 
-    .checking-auth h1 {
+    /* .checking-auth h1 {
         font-size: 1.28em;
         font-weight: 100;
-    }
+    } */
 
     .user-details {
         position: fixed;
