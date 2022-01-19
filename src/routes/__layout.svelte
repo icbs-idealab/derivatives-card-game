@@ -255,7 +255,7 @@
 
     })
 
-    let nonRedirectPaths = ['/', 'admin', '/update-password', '/account-verified']
+    let nonRedirectPaths = ['/', '/admin', '/update-password', '/account-verified']
 
     afterUpdate(() => {
         if(authChecked && !activeUser.id && nonRedirectPaths.indexOf($page.path) === -1){

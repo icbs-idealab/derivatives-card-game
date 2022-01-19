@@ -151,7 +151,7 @@
     import { Logger, redirect } from "$lib/helpers";
     import { currentUser, showPasswordUpdater } from "$lib/state";
     import { browser } from "$app/env";
-import { page } from "$app/stores";
+    import { page } from "$app/stores";
     let editingPassword = true
     let completed = false
     let newPassword: string = ""

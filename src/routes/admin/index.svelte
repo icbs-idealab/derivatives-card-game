@@ -1,5 +1,9 @@
 <div class={"admin-page" + canView ? '' : 'flex'}>
-    {#if canView}
+    {#if checking && !canView}
+        <div class="no-auth flex fd-col">
+            <LoadingText loadingText="Checking Priveliges" />
+        </div>
+    {:else if canView}
         <div class="admin">
             <div class="admin-tools flex fd-col jc-start">
                 <div class="title flex jc-between">
@@ -58,11 +62,15 @@
 <script>
     import { browser } from "$app/env";
     import { goto } from "$app/navigation";
+    import { checkIfAdmin } from "$lib/actions";
+import LoadingText from "$lib/components/app/loading-text.svelte";
     import CreateUsers from "$lib/components/auth/create-users.svelte";
     import Icon from "$lib/components/icon/icon.svelte";
+    import { Logger } from "$lib/helpers";
     import { currentUser } from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     let view = 'create-user'
+
     const admins = {
         'winger.shane@gmail.com': true,
         'shane@fulcrum.house': true,
@@ -73,8 +81,11 @@
         'p.tulip@imperial.ac.uk': true,
     }
 
-    let count = 0
+    let adminList = []
+
+    // let count = 0
     let canView = false
+    let checking = true
 
     function setView(newView){
         view = newView
@@ -83,19 +94,30 @@
         browser && goto('/')
     }
 
-    currentUser.subscribe((newUser) => {
-        if(newUser.id && newUser.email && admins[newUser.email]){
-            console.log('user is admin... ', count)
-        }
-        count += 1
-        console.log('count: ', count)
+    currentUser.subscribe(async (newUser) => {
+        // if(newUser.id && newUser.email && admins[newUser.email]){
+        //     console.log('user is admin... ', count)
+        // }
+        // count += 1
+        // console.log('count: ', count)
+
+        // check admin
+
+        let adminRecord = await getAdminList(newUser)
+        console.log('admin record: ', adminRecord)
+        setTimeout(() => {
+            checking = false
+            canView = adminRecord && adminRecord.active
+        }, 1000)
+
     })
 
-    onMount(() => {
-        if($currentUser.id && $currentUser.email && admins[$currentUser.email]){
-            canView = true
-        }
-    })
+    async function getAdminList(newUserData){
+        const {data, error} = await checkIfAdmin(newUserData)
+        Logger(['$$admin: ', data])
+        Logger(['$$admin error: ', error])
+        return data[0]
+    }
 </script>
 
 <style>

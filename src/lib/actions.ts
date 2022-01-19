@@ -131,6 +131,14 @@ export const singOut = async () => {
     return { error, success: !error }
 }
 
+export const checkIfAdmin = async (user) => {
+    return await supabase
+        .from('admins')
+        .select("*")
+        .eq('email', user.email)
+        .limit(1)
+}
+
 // PLAYER
 
 export const updatePlayer = async (newData, game_id, user_id) => {
