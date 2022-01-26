@@ -37,7 +37,7 @@
         setLoadingModal(true)
 
         let line1 = 'game_id,market,actor,actor_id,price,round,type,date';
-        let csv = `${line1}/n`
+        let csv = `${line1}\n`
 
         if(game.game_id){
             downloadGameData(game.game_id)
@@ -62,7 +62,7 @@
                 }
 
                 trades.data.map(trade => {
-                    csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)}/n`
+                    csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)}\n`
                 })
                 
                 // setLoadingModal(false)
@@ -124,8 +124,8 @@
             condition: true
         },
         {
-            label: 'Download Data',
-            icon: 'leave',
+            label: 'Download Trades',
+            icon: 'download',
             action: () => download(game),
             condition: isAuthenticated && hasGame && game.game_id && $page.path !== '/admin'
         },

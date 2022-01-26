@@ -17,7 +17,7 @@
     export let maxSpread = 3
     export let roleData: AppGamePlayer = {...defaultGamePlayer}
     export let localRates = {
-        buy: 40,
+        buy: 41,
         sell: 40,
     }
     export let suit: SuitName | null
@@ -137,7 +137,8 @@
         grid-template-columns: 1fr;
         grid-template-rows: repeat(4, 85px);
         grid-gap: 10px;
-        max-width: 1000px;
+        /* max-width: 1000px; */
+        max-width: initial;
     }
 
     .row .row-section {

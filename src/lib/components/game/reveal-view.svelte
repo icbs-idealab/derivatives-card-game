@@ -61,7 +61,7 @@
                             </div>
                         {:else}
                             <button 
-                                disabled={!selectedCard || processingCardSelection}
+                                disabled={!selectedCard || processingCardSelection || !playerHand[selectedCard]}
                                 on:click={revealCard}
                             >
                                 Reveal Card

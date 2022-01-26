@@ -1,9 +1,12 @@
 <script lang="ts">
     import SuitIcon from "$lib/components/suit/suit-icon.svelte";
+    import { divBy100AsString } from "$lib/helpers";
     import type { SuitName } from "$lib/types";
     export let market: SuitName = 'clubs'
     export let type: string = 'buy'
     export let price: number = 0.43
+    
+    
 </script>
 
 <div class="trade">
@@ -17,7 +20,7 @@
         <p>{type}</p>
     </div>
     <div class="trade-price flex" data-type={type}>
-        <p>${price}</p>
+        <p>${divBy100AsString(price)}</p>
     </div>
 </div>
 

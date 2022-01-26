@@ -77,7 +77,7 @@ export const defaultGamePlayer: AppGamePlayer = {
     hand: {...emptyHand},
     revealed: {...emptyReveals},
     role: '',
-    buy: 40,
+    buy: 41,
     sell: 40,
     is_admin: false,
 }

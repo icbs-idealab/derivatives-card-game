@@ -1,6 +1,7 @@
 <script lang="ts">
     import Trade from "./trade.svelte";
     export let trades = []
+    export let ended = false
 
     // let usable = [...trades]
     // usable.length > 10 && (usable.length = 10)
@@ -8,15 +9,21 @@
 
 <div class="game-ledger">
     <div class="ledger">
-        <div class="items">
-            {#each trades as trade}
-                <Trade 
-                    market={trade.market}
-                    type={trade.type}
-                    price={trade.price}
-                />
-            {/each}
-        </div>
+        {#if ended}
+            <div class="ended flex">
+                Please see the game archive to view trades
+            </div>
+        {:else}
+            <div class="items">
+                {#each trades as trade}
+                    <Trade 
+                        market={trade.market}
+                        type={trade.type}
+                        price={trade.price}
+                    />
+                {/each}
+            </div>
+        {/if}
     </div>
 </div>
 
@@ -44,5 +51,13 @@
         grid-gap: 5px;
         height: 100%;
         width: 100%;
+    }
+
+    .ended {
+        height: 100%;
+        width: 100%;
+        padding: 20px;
+        text-align: center;
+        opacity: 0.75
     }
 </style>

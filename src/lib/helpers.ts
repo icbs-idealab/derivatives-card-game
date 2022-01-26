@@ -208,3 +208,15 @@ export function makeRevealObject(){
 export function emailIsValid (email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
+
+export function valueWithSymbol(val){
+    let symbol = val < 0 ? '-' : ''
+    let usableValue = divBy100AsString(val)
+    return `${symbol}$${usableValue}`
+}
+
+export function divBy100AsString(val){
+    let stringVal: any = String(val)
+    let append = stringVal[stringVal.length-1] === '0' && stringVal !== '0' ? '0' : ''
+    return `${Math.abs(val/100)}${append}`
+}

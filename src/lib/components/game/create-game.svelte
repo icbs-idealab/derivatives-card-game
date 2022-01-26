@@ -71,7 +71,7 @@
     <NumericInput value={maximumSpread} onUpdate={onUpdateMaximumSpread} placeholder="Enter maximum spread" />
     <!-- submit -->
     <div class="button-container">
-        <Button type="proceed" label="Create Game" action={submit} />
+        <Button type="proceed" label="Create Game" action={submit} disabled={!maximumSpread || !playerName}/>
     </div>
 </div>
 

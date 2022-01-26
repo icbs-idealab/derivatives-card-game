@@ -5,14 +5,14 @@
         on:input={onUpdate}
         value={value}
     />
-    <div class="controls flex">
+    <!-- <div class="controls flex">
         <ClickWrapper handler={increment}>
             <Icon icon="chevronDown" color="var(--dm-dark)" />
         </ClickWrapper>
         <ClickWrapper handler={decrement}>
             <Icon icon="chevronUp" color="var(--dm-dark)" />
         </ClickWrapper>
-    </div>
+    </div> -->
 </div>
 
 <script lang="ts">

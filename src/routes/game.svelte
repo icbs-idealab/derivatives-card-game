@@ -281,9 +281,26 @@
         .catch(err => {
             Logger(['error setting final game scores: ', err])
         })
-        .finally(() => {
-            setLoadingModal(false)
+        // .finally(() => {
+        //     setLoadingModal(false)
+        // })
+    }
+
+    async function archiveFinishedGame(){
+        endGame()
+        .then((result) => {
+            Logger(['result of ending game: ', result])
         })
+        .catch((err) => {
+            Logger(['error ending game', err])
+        })
+        .finally(() => {
+            Logger(['ended game!'])
+            setTimeout(() => {
+                setLoadingModal(false)
+            }, 1000)
+        })
+
     }
 
     async function finishGame(){
@@ -295,8 +312,10 @@
         Logger(['$$$: end: ', error])
 
         if(data && Array.isArray(data)){
-            finalAction(data[0])
+            await finalAction(data[0])
+            await archiveFinishedGame()
         }
+        else {}
         // setLoadingModal(false)
     }
 

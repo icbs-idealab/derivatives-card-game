@@ -161,7 +161,7 @@
         let source = targetArchive[target]
         console.log(`extracting: ${target} from: `, source)
         let keys = tableKeys[target]
-        // let csvData = `${keys}/n`
+        // let csvData = `${keys}\n`
         let handler = extractors[target]
         let output = handler(keys, source, targetArchive)
         console.log('output: ', output)

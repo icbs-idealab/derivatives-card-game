@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getTrades, revealPlayerCard } from "$lib/actions";
     import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
-    import { calculatePlayerInventory, getRelevantTrades, Logger, makeGamePlayersAsObject } from "$lib/helpers";
+    import { calculatePlayerInventory, getRelevantTrades, Logger, makeGamePlayersAsObject, valueWithSymbol } from "$lib/helpers";
     import { currentGame, currentUser, gameTrades } from "$lib/state";
     import type { AppGame, GameEndState } from "$lib/types";
     import { get } from "svelte/store";
@@ -114,10 +114,7 @@
                 'Game Ended'
                 : '' as GameEndState
 
-
-    
-                let processingCardSelection = false
-    
+    let processingCardSelection = false
     let selectedCard = ''
 
     function selectCardForReaval(card){
@@ -162,6 +159,35 @@
         hearts: true,
         spades: true,
     }    
+
+    function getEndGameBalance(){
+        let scores = {
+            end: '$0.00',
+            final: '$0.00',
+        }
+        if(playerRole){
+            let b = game.final_scores[playerRole].balance
+            let markets = game.final_scores[playerRole].contracts
+            let last = game.final_scores[playerRole].lastRevealed
+            let bonus = markets[last] * 100
+            scores.end = valueWithSymbol(b)
+            scores.final = valueWithSymbol(b + bonus)
+        }
+
+        return scores
+    }
+
+    function getEndGameContracts(){
+        let endGameHand = {...emptyHand}
+        if(playerRole){
+            endGameHand = game.final_scores[playerRole].contracts
+        }
+        return endGameHand
+    }
+
+    function getEndGameTrades(){
+
+    }
 </script>
 
 <section id="game">
@@ -204,7 +230,7 @@
                             gameRound={game.round}
                             gameActive={game.started && !game.ended}
                             playerCards={playerCards}
-                            contracts={contracts[role]}
+                            contracts={game.ended && game.final_scores ? getEndGameContracts()[role] : contracts[role]}
                             revealed={revealed[role]}
                             isLastRevealed={lastRevealed[role]}
                             maxSpread={game.maximum_spread}
@@ -240,9 +266,14 @@
                     <!-- balance -->
 
                     <div class="balance flex fd-col">
-                        <p>Balance: { derivedBalance }</p>
-                        {#if derivedFinalBalance !== null}
-                            <p>Final Balance: { derivedFinalBalance }</p>
+                        {#if game.final_scores}
+                            <p>Balance: { getEndGameBalance().end }</p>
+                            <p>Final Balance: { getEndGameBalance().final }</p>
+                        {:else}
+                            <p>Balance: { derivedBalance }</p>
+                            {#if derivedFinalBalance !== null}
+                                <p>Final Balance: { derivedFinalBalance }</p>
+                            {/if}
                         {/if}
                     </div>
 
@@ -252,7 +283,7 @@
                         <p>{game.deck.held.length} Cards in Deck</p>
                     </div>
                 </div>
-                <TradeLedger trades={trades} />
+                <TradeLedger trades={trades} ended={game.ended} />
             {/if}
         </div>
 
@@ -330,7 +361,7 @@
         grid-template-columns: 1fr;
         grid-template-rows: repeat(4, 85px);
         grid-gap: 10px;
-        max-width: 1000px;
+        /* max-width: 1000px; */
     }
 
     .max-spread {

@@ -5,7 +5,7 @@
     import type { AppErrors } from "$lib/types";
     import { appErrors } from "$lib/state";
     import { setLoadingModal, updateActiveUser } from "$lib/actions";
-import Icon from "../icon/icon.svelte";
+    import Icon from "../icon/icon.svelte";
     export let email: string = ''
     export let password: string = ''
     export let updateEmail = (value: string) => {}
