@@ -6,20 +6,16 @@
 </script>
 
 <div class="page-wrapper" id="auth">
-    <div class="graphic-container flex">
-        <div class="g">
+    <div class="auth-and-graphic flex fd-col">
+        <div class="g-graphic">
             <GameGraphic />
-            <!-- <div class="game-graphic"></div> -->
         </div>
         {#if $currentUser && $currentUser.id}
             <div class="a">
                 <GameFinder />
-                <!-- <div class="game-finder flex">
-                    <h1>Game Finder</h1>
-                </div> -->
             </div>
             {:else}
-            <div class="a">
+            <div class="auth-container">
                 <Authenticate />
             </div>
         {/if}
@@ -33,13 +29,12 @@
         position: relative;
     }
     
-    .g {
-        position: absolute;
+    .g-graphic {
+        position: relative;
         z-index: 0;
-        top: 80px;
+        margin-bottom: 40px;
     }
-    .a {
-        margin-top: 180px;
+    .auth-container {
         position: relative;
         z-index: 1;
     }
