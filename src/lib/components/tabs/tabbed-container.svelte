@@ -19,5 +19,6 @@
     .tabbed-container {
         padding: var(--container-padding);
         border-radius: 18px;
+        min-width: 450px;
     }
 </style>

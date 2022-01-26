@@ -5,7 +5,7 @@
     import { requestAccess, signIn } from "$lib/actions";
     import Login from "./login.svelte";
     import RequestAccess from "./request-access.svelte";
-import { Logger } from "$lib/helpers";
+    import { Logger } from "$lib/helpers";
     // import { onMount } from "svelte";
     // import { user } from "$lib/state";
     // import { browser } from "$app/env";
@@ -76,14 +76,11 @@ import { Logger } from "$lib/helpers";
 
 <TabbedContainer>
     <!-- <div class="tab-header flex"> -->
-        <Tabs tabs={tabs} onClick={tabHandler} activeTabId={show} />
+        <!-- <Tabs tabs={tabs} onClick={tabHandler} activeTabId={show} /> -->
     <!-- </div> -->
-    <TabConent>
-        {#if show === 'login'}
-            <Login onSubmit={submit} email={email} password={password} updateEmail={updateEmail} updatePassword={updatePassword} />
-        {:else}
-            <RequestAccess onSubmit={submit} email={email} message={message} updateEmail={updateEmail} updateMessage={updateMessage} />
-        {/if}
-    </TabConent>
+    <!-- <TabConent>
+        <Login onSubmit={submit} email={email} password={password} updateEmail={updateEmail} updatePassword={updatePassword} />
+    </TabConent> -->
+    <Login onSubmit={submit} email={email} password={password} updateEmail={updateEmail} updatePassword={updatePassword} />
 </TabbedContainer>
 

@@ -14,7 +14,7 @@
         {:else}
             <div class="modal-content flex fd-col ai-start">
                 <h1>Update your password</h1>
-                <p>You're logging in for the first time, please set a new password.</p>
+                <!-- <p>You're logging in for the first time, please set a new password.</p> -->
                 <p class="small">Your password should be at least 8 characters long </p>
                 <form action="" class="form">
                     {#if editingPassword}

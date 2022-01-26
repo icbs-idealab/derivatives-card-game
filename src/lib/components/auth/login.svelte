@@ -5,6 +5,7 @@
     import type { AppErrors } from "$lib/types";
     import { appErrors } from "$lib/state";
     import { setLoadingModal, updateActiveUser } from "$lib/actions";
+import Icon from "../icon/icon.svelte";
     export let email: string = ''
     export let password: string = ''
     export let updateEmail = (value: string) => {}
@@ -54,6 +55,9 @@
 </script>
 
 <div class="login">
+    <div class="title flex jc-start">
+        <p>Log-in</p>
+    </div>
     <TextInput value={email} onUpdate={onUpdateEmail} placeholder="Enter your email" />
     <PasswordInput value={password} onUpdate={onUpdatePassword} placeholder="Enter your password" />
     <div class="button-container">
@@ -66,8 +70,24 @@
         width: 100%;
         display: grid;
         grid-template-columns: 1fr;
-        grid-template-rows: 1fr 1fr 1fr;
-        grid-gap: 15px;
-        padding-top: 30px;
+        grid-template-rows: auto 1fr 1fr auto;
+        grid-gap: 8px;
+        /* padding-top: 30px; */
+    }
+
+    .button-container {
+        margin-top: 20px;
+    }
+
+    .title {
+        font-size: 1.15em;
+        margin: 0 0 25px;
+        text-align: left;
+        width: 100%;
+    }
+
+    .title p{
+        font-size: 16pt;;
+        font-weight: bold;
     }
 </style>
