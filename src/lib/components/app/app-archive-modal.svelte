@@ -192,15 +192,15 @@
                     <div>Date Archived</div>
                     <div>Date Started</div>
                     <div>Players</div>
-                    <div>Finished</div>
-                    <div>Abandoned</div>
+                    <div>Completed</div>
+                    <!-- <div>Abandoned</div> -->
                     <div>Trades</div>
                     <div>Downloads</div>
                 </li>
                 {#each [...localArchives] as arch}
                     <li class="archive-entry">
                         <div>{arch.game_id}</div>
-                        <div>{parseDate(arch.game.created_at)}</div>
+                        <div>{parseDate(arch.created_at)}</div>
                         <div>{parseDate(arch.game.created_at)}</div>
                         <div class="arch-players flex fw-wrap jc-start">
                             {#each arch.players as player}
@@ -212,8 +212,8 @@
                                 {/if}
                             {/each}
                         </div>
-                        <div>{arch.game.ended}</div>
-                        <div>{arch.game.ended && arch.game.round === 33}</div>
+                        <div>{arch.game.completed || arch.game.round === 33}</div>
+                        <!-- <div>{arch.game.ended && arch.game.completed}</div> -->
                         <div>{arch.trades.length}</div>
                         <div class="download-buttons flex fd-col ai-stretch">
                             <button 
@@ -283,7 +283,8 @@
 
     li {
         display: grid;
-        grid-template-columns: 1fr 0.65fr 0.65fr 1fr 0.5fr 0.5fr 1fr 0.5fr;
+        /* grid-template-columns: 1fr 0.65fr 0.65fr 1fr 0.5fr 0.5fr 1fr 0.5fr; */
+        grid-template-columns: 1fr 0.65fr 0.65fr 1fr 0.5fr 1fr 0.5fr;
         grid-template-rows: auto;
         gap: 10px
     }
