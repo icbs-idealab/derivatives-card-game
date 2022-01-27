@@ -3,7 +3,7 @@
     import Lobby from "$lib/components/game/lobby.svelte";
     import Play from "$lib/components/game/play.svelte";
     import { allRoleNames, emptyHand, emptyReveals, emptySuits, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
-    import { getRelevantTrades, Logger, makeGamePlayersAsObject } from "$lib/helpers";
+    import { getRelevantTrades, getReveals, hasAll, Logger, makeGamePlayersAsObject } from "$lib/helpers";
     import { currentGame, currentUser, gamePlayers, gameTrades, noSuchGame, serverSubscriptions } from "$lib/state";
     import type { AppGame, SuitName, SuitReveals } from "$lib/types";
     import { afterUpdate, onMount } from "svelte";
@@ -27,25 +27,25 @@
     let balance = 0
     let revealRoundIntervalCheck = null
 
-    let revealRoundState: SuitReveals = getReveals(players)
+    let revealRoundState: SuitReveals = getReveals(players, game)
 
-    function getReveals(ps): SuitReveals{
-        let reveals = {...emptySuits}
+    // function getReveals(ps, game): SuitReveals{
+    //     let reveals = {...emptySuits}
 
-        roleKeys.map((role) => {
-            reveals[role] = game && game.round ? 
-                ps[role].revealed[game.round]
-                : ''
-        })
-        return reveals
-    }
+    //     roleKeys.map((role) => {
+    //         reveals[role] = game && game.round ? 
+    //             ps[role].revealed[game.round]
+    //             : ''
+    //     })
+    //     return reveals
+    // }
 
-    function hasAll(state){
-        return state.clubs
-            && state.diamonds
-            && state.hearts
-            && state.spades
-    }
+    // function hasAll(state){
+    //     return state.clubs
+    //         && state.diamonds
+    //         && state.hearts
+    //         && state.spades
+    // }
 
     // $:isRevealRound = playerRevealRounds[game.round]
     $:showRevealRound = playerRevealRounds[game.round] && !hasAll(revealRoundState)
@@ -331,7 +331,7 @@
             
             
             if(playerRevealRounds[newGame.round]){
-                revealRoundState = getReveals(players)
+                revealRoundState = getReveals(players, game)
                 setTimeout(() => {
                     showRevealRound = playerRevealRounds[game.round] && !hasAll(revealRoundState)
                 })
@@ -354,7 +354,7 @@
             clearRevealInterval()
         }
         else{
-            let reveals = getReveals(newPlayers)
+            let reveals = getReveals(newPlayers, game)
             for(let rev in reveals){
                 reveals[rev] && !revealRoundState[rev] && (revealRoundState[rev] = reveals[rev])
             }

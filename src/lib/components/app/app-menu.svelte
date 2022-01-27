@@ -21,12 +21,14 @@
     import { page } from "$app/stores";
     import { browser } from "$app/env";
     import { get } from "svelte/store";
+    import Icon from "../icon/icon.svelte";
     // import { browser } from "$app/env";
     const {saveAs} = fileSaver
 
     export let hasGame: boolean = false
     export let game: Partial<AppGame> = {...defaultGame}
     export let isAuthenticated: boolean = false
+    export let inRevealPhase: boolean = false
 
     function end(){
         // console.log('would end game')
@@ -36,7 +38,7 @@
     function download(game){
         setLoadingModal(true)
 
-        let line1 = 'game_id,market,actor,actor_id,price,round,type,date';
+        let line1 = 'game_id,market,actor,actor_id,price,round,type,date,time';
         let csv = `${line1}\n`
 
         if(game.game_id){
@@ -56,13 +58,18 @@
                     }
                 }
 
+                let getTime = (date) => {
+                    let d = new Date(date)
+                    return `${d.getHours()}:${d.getMinutes()}:${d.getMilliseconds()}`
+                }
+
                 let getDate = (date) => {
                     let d = new Date(date)
-                    return `${d.getSeconds()}/${d.getMinutes()}/${d.getHours()}`
+                    return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`
                 }
 
                 trades.data.map(trade => {
-                    csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)}\n`
+                    csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)},${getTime(trade.created_at)}\n`
                 })
                 
                 // setLoadingModal(false)
@@ -145,32 +152,51 @@
     ]
 
     $:offset = $page.path === '/admin'
+
+    let showMenuInReveal = false
+
+    function toggleMenu(){
+        showMenuInReveal = !showMenuInReveal
+    }
 </script>
 
-<ul class="app-menu flex jc-start" data-offset={offset}>
-    {#each items as menuItem}
-        {#if menuItem && menuItem.condition}
-            <li>
-                <AppMenuItem 
-                    icon={menuItem.icon} 
-                    label={menuItem.label} 
-                    action={menuItem.action} 
-                />
-            </li>
-        {/if}
-    {/each}
 
-    {#if $currentGame.admin_id === $currentUser.id && $currentGame.game_id && !$currentGame.ended}
-        <li class="end-game-button">
-            <AppMenuItem
-                color="var(--lm-lighter)"
-                icon="handStop"
-                label="End Game"
-                action={end}
-            />
-        </li>
+<span>
+    {#if inRevealPhase}
+        <button class="toggle-button flex" on:click={toggleMenu}>
+            <Icon icon="menu" />
+            Menu
+        </button>    
     {/if}
-</ul>
+    <ul class="app-menu" data-offset={offset} data-in-reveal={inRevealPhase} data-show-in-reveal={showMenuInReveal}>
+        <div class={ inRevealPhase ? 'reveal-menu-content t1' : 'normal-menu-content' } >
+            {#each items as menuItem}
+                {#if menuItem && menuItem.condition}
+                    <li>
+                        <AppMenuItem 
+                            icon={menuItem.icon} 
+                            label={menuItem.label} 
+                            action={menuItem.action} 
+                        />
+                    </li>
+                {/if}
+            {/each}
+        
+            {#if $currentGame.admin_id === $currentUser.id && $currentGame.game_id && !$currentGame.ended}
+                <li class="end-game-button">
+                    <AppMenuItem
+                        bg="var(--red)"
+                        color="var(--lm-lighter)"
+                        icon="handStop"
+                        label="End Game"
+                        action={end}
+                    />
+                </li>
+            {/if}
+        </div>
+    </ul>
+</span>
+
 
 <style>
     .app-menu {
@@ -182,6 +208,17 @@
         margin: 0;
         padding: 0;
         list-style: none;
+    }
+
+    .toggle-button {
+        width: 70px;
+        height: 35px;
+        position: fixed;
+        z-index: 91;
+        bottom: 35px;
+        left: calc(8vw - 80px);
+        padding: 0 8px 0 3.5px;
+        font-size: 0.8em;
     }
 
     .app-menu[data-offset="true"]{
@@ -202,9 +239,49 @@
         margin-right: 15px;
     }
 
-    li.end-game-button {
-        padding: 6px 12px;
-        background: var(--red);
-        border-radius: 6px;
+    .normal-menu-content {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        position: relative;
     }
+
+    .reveal-menu-content {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: flex-start;
+        justify-content: flex-start;
+        position: relative;
+    }
+
+    .reveal-menu-content li {
+        margin: 10px 0 0!important;
+    }
+
+    [data-show-in-reveal] .reveal-menu-content {
+        transition: opacity .2s ease;
+        transition-delay: .2s;
+    }
+    
+    [data-show-in-reveal] .t1 {
+        transition: top .2s ease;
+        /* transition-delay: .2s; */
+    }
+
+    [data-show-in-reveal="true"] .reveal-menu-content, 
+    [data-show-in-reveal="true"] .t1 {
+        opacity: 1;
+        top: 0;
+    }
+
+    [data-show-in-reveal="false"] .reveal-menu-content,
+    [data-show-in-reveal="false"] .t1 {
+        opacity: 0;
+        top: 50vh;
+    }
+
+    .end-game-button {
+        order: 10;
+    }
+
 </style>

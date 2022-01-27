@@ -1,9 +1,9 @@
 import { browser } from "$app/env";
 import { goto } from "$app/navigation";
 import { get } from "svelte/store";
-import { allRoleNames, defaultGamePlayer, emptyHand, emptyReveals, playerRevealRoundsArray, roleKeys } from "./constants";
+import { allRoleNames, defaultGamePlayer, emptyHand, emptyReveals, emptySuits, playerRevealRoundsArray, roleKeys } from "./constants";
 import { currentUser, gamePlayers } from "./state";
-import type { AppGamePlayer, AppGamePlayers, GameCard, Holder, SuitName } from "./types";
+import type { AppGamePlayer, AppGamePlayers, GameCard, Holder, SuitName, SuitReveals } from "./types";
 const DEV = import.meta.env.VITE_DEV
 
 export function Logger(params: any[]){
@@ -219,4 +219,22 @@ export function divBy100AsString(val){
     let stringVal: any = String(val)
     let append = stringVal[stringVal.length-1] === '0' && stringVal !== '0' ? '0' : ''
     return `${Math.abs(val/100)}${append}`
+}
+
+export function getReveals(ps, game): SuitReveals{
+    let reveals = {...emptySuits}
+
+    roleKeys.map((role) => {
+        reveals[role] = game && game.round ? 
+            ps[role].revealed[game.round]
+            : ''
+    })
+    return reveals
+}
+
+export function hasAll(state){
+    return state.clubs
+        && state.diamonds
+        && state.hearts
+        && state.spades
 }

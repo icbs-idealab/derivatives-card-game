@@ -10,8 +10,8 @@
 </script>
 
 <div class="trade">
-    <div class="market flex">
-        <SuitIcon suit={market} />
+    <div class="market flex" data-market={market}>
+        <SuitIcon suit={market} size={24} />
     </div>
     <div class="market-name flex jc-start">
         <p>{market}</p>

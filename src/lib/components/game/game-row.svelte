@@ -69,7 +69,7 @@
 <div class="row">
     <!-- market values -->
     <div class="market-values row-section">
-        <div class="symbol inner-column">
+        <div class="symbol inner-column" data-suit={suit}>
             {#if suit}
                 {@html `${suits[suit].symbol}`}
             {:else}
@@ -170,8 +170,10 @@
     }
 
     .row-section .symbol {
-        font-size: 1em;
+        /* font-size: 1.5em; */
+        font-size: 24px;
         text-align: center;
-        opacity: 0.125;
+        opacity: 0.85;
     }
+
 </style>

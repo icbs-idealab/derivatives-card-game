@@ -21,12 +21,12 @@
 
     export let suit: SuitName | PlayerRole = 'clubs'
     export let size: number = 16
-    let symbol = config[suit] ? config[suit].symbol : '🤔'
-    let color = config[suit] ? config[suit].color : ''
+    $:symbol = config[suit] ? config[suit].symbol : '🤔'
+    $:color = config[suit] ? config[suit].color : ''
 
 </script>
 
-<div class="suit flex" style={`font-size: ${size}px; color: ${ color };`} data-symbol={symbol}>
+<div class="suit flex" style={`font-size: ${size}px; color: ${ color };`} data-symbol={symbol} data-market={suit}>
     {@html symbol}
 </div>
 

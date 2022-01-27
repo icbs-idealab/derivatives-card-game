@@ -1,6 +1,9 @@
 <script lang="ts">
     import { roleKeys } from "$lib/constants";
+import { currentGame, currentUser } from "$lib/state";
     import type { PlayerRole, SuitName } from "$lib/types";
+    import { get } from "svelte/store";
+    import AppMenu from "../app/app-menu.svelte";
     import Backdrop from "../app/backdrop.svelte";
     import SuitIcon from "../suit/suit-icon.svelte";
     export let selectCard: (card: string) => any = (card: string) => console.log('selecting card ', card)
@@ -20,16 +23,23 @@
     export let revealCard = () => {
         console.log('would reveal card')
     }
+
+    $:revealType = localRole && roleKeys.indexOf(localRole) !== -1 ? 'market' : 'speculator'
+
+    let game = get(currentGame)
+    let user = get(currentUser)
 </script>
 
 <Backdrop zIndex={10} opacity={0.1}>
-    <div class="player-reveal-view">            
+    <div class="player-reveal-view" data-reveal-type={revealType}>
             {#if localRole && roleKeys.indexOf(localRole) !== -1}
                 <div class="title-section flex fd-col">
                     <h1>Reveal Phase</h1>
-                    <p>Select a Card to reveal</p>
+                    <p>Please select a card to reveal below:</p>
                 </div>
-                
+            {/if}
+
+            {#if localRole && roleKeys.indexOf(localRole) !== -1}    
                 <div class="cards-view">
                     {#each roleKeys as role}
                         <div class="card flex fd-col">
@@ -83,8 +93,7 @@
                 <!-- <div class="placeholder"></div> -->
             {/if}
 
-            <div class="players-display">
-                
+            <div class="players-display"> 
                 {#each roleKeys as role}
                     <div 
                         class="rv-player-role flex jc-start" 
@@ -102,22 +111,34 @@
                         </p>
                     </div>
                 {/each}
-
             </div>
     </div>
+
+    <AppMenu 
+        hasGame={user.user_metadata.game_id}
+        game={game}
+        isAuthenticated={user.id !== null}
+        inRevealPhase={true}
+    />
+
 </Backdrop>
 
 <style>
     .player-reveal-view {
         width: 100%;
-        height: calc(100% - 125px);
+        height: calc(100% - 115px);
         position: relative;
-        top: 125px;
-        padding: 60px;
+        top: 115px;
+        padding: 30px;
         display: grid;
         grid-template-columns: 1fr;
-        grid-template-rows: 100px 450px 150px 1fr;
-        background: rgba(40, 40, 40, 0.95)
+        grid-template-rows: 100px auto 150px auto;
+        background: rgba(40, 40, 40, 0.975)
+    }
+
+    .player-reveal-view[data-reveal-type="market"] {
+        grid-template-rows: minmax(100px, auto) minmax(200px, auto) minmax(70px, auto) auto;
+        padding-bottom: 85px;
     }
 
     .player-reveal-view p {
@@ -126,20 +147,27 @@
 
     .title-section h1 {
         font-size: 1.5em;
+        font-weight: bold;
+        letter-spacing: 1.2px;
+        word-spacing: 4px;
         color: white!important;
-        margin: 0;
+        margin: 0 0 5px;
+        /* text-transform: uppercase; */
     }
 
     .title-section p {
-        font-size: 1.15em;
-        color: gray!important;
+        font-size: 1em;
+        color: lightgray!important;
+        opacity: 0.75;
     }
 
     .cards-view, .players-display {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        /* grid-template-columns: repeat(4, 1fr); */
+        grid-template-columns: repeat(4, auto);
         grid-template-rows: 100%;
         grid-gap: 20px;
+        justify-content: center;
         /* background: rgba(190, 150, 150, 0.5); */
         width: 100%;
     }
@@ -168,8 +196,8 @@
     }
 
     .card-main {
-        height: 300px;
-        width: 200px;
+        min-height: 160px;
+        min-width: 120px;
         background: white;
         border-radius: 8px;
         position: relative;
@@ -227,6 +255,10 @@
     .rv-reveal-control button {
         padding: 15px 30px;
     }
+
+    /* .players-display {
+        align-items: flex-start;
+    } */
 
     .rv-player-role:not([data-revealed="true"]) p {
         color: gray;

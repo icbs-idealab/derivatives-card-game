@@ -96,7 +96,7 @@
     }
 
     const tableKeys  = {
-        players: 'game id,role,player name,admin,clubs,diamonds,hearts,spades,round 1,round 6,round 11, round 16, round 21,round 26',
+        players: 'game id,role,player name,clubs,diamonds,hearts,spades,round 1,round 6,round 11, round 16, round 21,round 26',
         trades: 'game id,actor,actor id,market,round,price,type,date,time'
     }
 

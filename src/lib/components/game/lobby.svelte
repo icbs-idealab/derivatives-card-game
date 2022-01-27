@@ -191,10 +191,10 @@
             {/each}
             {#if adminRole.player_name}
                 <div class="pending-player flex fd-col">
-                    <div class="is-admin flex">
+                    <div class="pp-icon flex">
                         👑
                     </div>
-                    <div class="pp-icon" style="color: var(--blue);">☻</div>
+                    <!-- <div class="pp-icon" style="color: var(--blue);">☻</div> -->
                     <div class="pp-name">
                         {adminRole.player_name}
                     </div>

@@ -22,6 +22,10 @@
         height: auto;
     }
 
+    .interaction-wrapper {
+        transform: scale(1.2)
+    }
+
     .tooltip-text {
         position: absolute;
         top: 100%;
@@ -32,7 +36,8 @@
         border-radius: 4px;
         padding: 15px;
         color: white;
-        font-size: 0.8em;
+        font-size: 0.9em;
+        line-height: 1.3;
         z-index: 100;
         visibility: hidden;
     }

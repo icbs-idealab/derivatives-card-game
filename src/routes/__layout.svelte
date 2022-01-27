@@ -38,6 +38,10 @@
         </div>
     {/if}
 
+    {#if $showGameRules}
+        <AppRules />
+    {/if}
+
     <!-- game menu -->
 
     {#if activeUser && activeUser.id}
@@ -45,20 +49,15 @@
             hasGame={activeUser.user_metadata.game_id}
             game={activeGame}
             isAuthenticated={activeUser.id !== null}
+            inRevealPhase={false}
         />
     {/if}
 
-    {#if $showGameRules}
-        <AppRules />
-    {/if}
+    <!-- end game modal -->
 
     {#if $showEndGameModal}
         <EndGameModal />
     {/if}
-
-    <!-- {#if $showPasswordUpdater}
-        <UpdatePassword />
-    {/if} -->
 
     {#if $showArchivesModal}
         <AppArchiveModal />
@@ -83,13 +82,13 @@
     import { checkIfPasswordChanged, getAndWatchGame, removeGameFromUserRecord, setLoadingModal } from "$lib/actions";
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
-    import { Logger, redirect } from "$lib/helpers";
-    import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage, gameChecked, showArchivesModal} from "$lib/state";
+    import { getReveals, hasAll, Logger, redirect } from "$lib/helpers";
+    import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage, gameChecked, showArchivesModal, gamePlayers} from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
-    import type { AppGame, SupabaseUser } from '$lib/types';
-    import { defaultGame } from '$lib/constants';
+    import type { AppGame, SuitReveals, SupabaseUser } from '$lib/types';
+    import { defaultGame, playerRevealRounds } from '$lib/constants';
     import { browser } from '$app/env';
     import EndGameModal from '$lib/components/app/end-game-modal.svelte';
     import AppRules from '$lib/components/app/app-rules.svelte';
@@ -99,6 +98,7 @@
     import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
     import AppArchiveModal from '$lib/components/app/app-archive-modal.svelte';
     import LoadingText from '$lib/components/app/loading-text.svelte';
+import { get } from 'svelte/store';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'
@@ -239,20 +239,11 @@
         })
     }
 
-    onMount(() => {
-        // setLoadingModal(true)
-        watch()
-        // let clipboard = new ClipboardJS('.copy-icon')
-        // clipboard.on('success', () => {
-        //     showCoppied = true
-        //     setTimeout(() => {
-        //         showCoppied = false
-        //     })
-        // })
-        // clipboard.on('error', (e) => {
-        //     console.log('error copying ', e)
-        // })
+    let revealRoundState: SuitReveals = getReveals(get(gamePlayers), activeGame)
+    $:showRevealRound = playerRevealRounds[activeGame.round] && !hasAll(revealRoundState)
 
+    onMount(() => {
+        watch()
     })
 
     let nonRedirectPaths = ['/', '/admin', '/update-password', '/account-verified']

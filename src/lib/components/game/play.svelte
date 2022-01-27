@@ -3,7 +3,7 @@
     import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
     import { calculatePlayerInventory, getRelevantTrades, Logger, makeGamePlayersAsObject, valueWithSymbol } from "$lib/helpers";
     import { currentGame, currentUser, gameTrades } from "$lib/state";
-    import type { AppGame, GameEndState } from "$lib/types";
+    import type { AppGame, GameEndState, CardHand, RevealRounds, SuitName } from "$lib/types";
     import { get } from "svelte/store";
     import Backdrop from "../app/backdrop.svelte";
     import Button from "../button/button.svelte";
@@ -104,7 +104,8 @@
         }
     }
 
-    $:playerCards = playerRole ? (players[playerRole].hand || emptyHand) : emptyHand
+    // $:playerCards = playerRole ? (players[playerRole].hand || emptyHand) : emptyHand
+    $:playerCards = playerRole ? calcHandFromReveals(players[playerRole]) : emptyHand
     $:playerReveals = playerRole ? (players[playerRole].revealed || emptyReveals) : emptyReveals
     $:hand = calcHand(players, playerRole)
 
@@ -113,6 +114,24 @@
             game.ended && game.round !== 33 ? 
                 'Game Ended'
                 : '' as GameEndState
+
+    function calcHandFromReveals(playerHandData){
+        let {hand, revealed} = playerHandData
+        if(hand && revealed){
+            let usableHand: CardHand = {...hand}
+            
+            for(let round in revealed){
+                let revealedCard: SuitName = revealed[round]
+                if(revealedCard){
+                    usableHand[ revealedCard ] -= 1
+                }
+            }
+            return usableHand
+        }
+        else {
+            return emptyHand
+        }
+    }
 
     let processingCardSelection = false
     let selectedCard = ''
@@ -125,7 +144,7 @@
         if(playerRole && players[playerRole]){
             processingCardSelection = true
             let update = players[playerRole]
-            update.hand[selectedCard] -= 1
+            // update.hand[selectedCard] -= 1
             update.revealed[game.round] = selectedCard
 
             Logger(['will update player with new hand: ', update])

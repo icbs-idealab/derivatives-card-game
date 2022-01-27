@@ -8,7 +8,7 @@
 </script>
 
 <div class="deck row-section" data-is-last-revealed={isLastRevealed}>
-    <div class="symbol inner-column">{@html `${suits[suit].symbol}`}</div>
+    <div class="symbol inner-column" data-suit={suit}>{@html `${suits[suit].symbol}`}</div>
     <ValueDisplay value={revealed} />
     <ValueDisplay value={13} />
 </div>

@@ -8,7 +8,7 @@
 </script>
 
 <div class="inventory row-section">
-    <div class="symbol inner-column">{@html `${suits[suit].symbol}`}</div>
+    <div class="symbol inner-column" data-suit={suit}>{@html `${suits[suit].symbol}`}</div>
     <ValueDisplay value={contracts} />
     <ValueDisplay value={cardCount} />
 </div>

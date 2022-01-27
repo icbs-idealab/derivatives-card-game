@@ -5,14 +5,14 @@ import Tooltip from "./tooltip.svelte";
 
 <div class="section-labels">
     <div class="section-label">
-        <p>Markets</p>
+        <p class="column-title">Markets</p>
         <Tooltip 
             value="This is where you can buy or sell contracts in different markets" 
         />
             
     </div>
     <div class="section-label">
-        <p>Inventory</p>
+        <p class="column-title">Inventory</p>
         <div class="column-labels">
             <span></span>
             <p>My Contracts</p>
@@ -23,7 +23,7 @@ import Tooltip from "./tooltip.svelte";
         />  
     </div>
     <div class="section-label">
-        <p>Deck</p>
+        <p class="column-title">Deck</p>
         <div class="column-labels">
             <span></span>
             <p>Revealed</p>
@@ -34,7 +34,7 @@ import Tooltip from "./tooltip.svelte";
         />
     </div>
     <div class="section-label">
-        <p>Trades</p>
+        <p class="column-title">Trades</p>
         <!-- <Icon icon="info" /> -->
         <!-- <div class="tooltip">
             This shows up to the last 20 trades
@@ -46,6 +46,10 @@ import Tooltip from "./tooltip.svelte";
 </div> 
 
 <style>
+
+    .column-title {
+        font-size: 1em!important;
+    }
 
     .column-labels {
         position: absolute;
@@ -61,6 +65,7 @@ import Tooltip from "./tooltip.svelte";
         width: 100%;
         text-align: center!important;
         font-size: 0.6em!important;
+        line-height: 1.1;
     }
 
     .section-labels {
