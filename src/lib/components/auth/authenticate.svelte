@@ -60,7 +60,7 @@
 
     const updateEmail = (value) => {
         email = value
-        Logger(['udpating'])
+        Logger(['updating'])
     }
     function updatePassword(value){password = value}
     function updateMessage(value){message = value}

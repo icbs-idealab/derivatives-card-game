@@ -1,7 +1,7 @@
 <script lang=ts>
-    import { getArchives } from "$lib/actions";
+    import { getArchiveData, getArchives } from "$lib/actions";
     import { emptyHand, playerRevealRounds } from "$lib/constants";
-    import { makeGamePlayersAsObject } from "$lib/helpers";
+    import { makeGamePlayersAsObject, parseArchives } from "$lib/helpers";
     import { appMessage, archives, currentUser, showAppMessage, showArchivesModal } from "$lib/state";
     import { onMount } from "svelte";
     import { get } from "svelte/store";
@@ -22,7 +22,8 @@
 
     async function findArchives(){
         gettingArchives = true
-        const {data, error} = await getArchives( get(currentUser).id );
+        // const {data, error} = await getArchives( get(currentUser).id );
+        const {data, error} = await getArchiveData()
         if(!error && data) {
 
             setDisabledMap(data)
@@ -48,30 +49,6 @@
                 players: false,
                 trades: false,
             }
-        })
-    }
-
-    function parseArchives(list){
-        // let ids = {}
-        // let usable = []
-        // list.forEach((arch) => {
-        //     if( !ids[arch.game_id] ){
-        //         usable.push(arch)
-        //         ids[arch.game_id] = true
-        //     }
-        //     console.log('$ids$: ', ids)
-        // })
-
-        return list.map(arch => {
-            let mapped = {
-                ...arch,
-                players: arch.players.data,
-                mappedPlayers: makeGamePlayersAsObject(arch.players.data),
-                // trades: JSON.parse(arch.trades),
-                participants: arch.participants.split('_'),
-            }
-            console.log('arch: ', mapped)
-            return mapped
         })
     }
 

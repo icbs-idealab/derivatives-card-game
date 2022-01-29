@@ -174,11 +174,11 @@ export const buildShuffledDeck = () => {
         roleKeys.forEach((roleKey: string) => {
             let rc = removeCardFromTop(hand)
             roleHands[roleKey][rc] += 1
-            Logger(['removed card form top: ', rc, ' and added to: ', roleKey])
+            // Logger(['removed card form top: ', rc, ' and added to: ', roleKey])
         })
     }
 
-    Logger(['created deck with roleHands: ', roleHands])
+    // Logger(['created deck with roleHands: ', roleHands])
 
 
     return {
@@ -237,4 +237,18 @@ export function hasAll(state){
         && state.diamonds
         && state.hearts
         && state.spades
+}
+
+export function parseArchives(list){
+    return list.map(arch => {
+        let mapped = {
+            ...arch,
+            players: arch.players.data,
+            mappedPlayers: makeGamePlayersAsObject(arch.players.data),
+            // trades: JSON.parse(arch.trades),
+            participants: arch.participants.split('_'),
+        }
+        // console.log('arch: ', mapped)
+        return mapped
+    })
 }

@@ -5,11 +5,11 @@
     import TextInput from "$lib/components/input/text-input.svelte";
     // import Container from "$lib/layout/container.svelte";
     import type { MarketButtonParameters } from "$lib/types";
-    import { createNewGame } from "$lib/actions";
+    import { createNewGame, setLoadingModal } from "$lib/actions";
     import MarketSelector from "./market-selector.svelte";
     import { browser } from "$app/env";
     import { goto } from "$app/navigation";
-    import { currentUser } from "$lib/state";
+    import { currentUser, showLoadingModal } from "$lib/state";
     import { get } from "svelte/store";
     export let playerName: string = ''
     // export let gameId: string = ''
@@ -50,11 +50,23 @@
             playerName
         })
         .then(() => {
-            browser && goto('/game') && location.reload()
+            console.log('created game...')
+            // browser && goto('/game')
+            browser && location.reload()
+            // browser && goto('/') && location.reload()
+            // browser && goto('/game') && location.reload()
+            // setTimeout(() => {
+            //     browser && goto('/game')
+            // }, 500)
             // browser && location.reload()
         })
         .catch(error => {
             console.log('error creating new game: ', error)
+        })
+        .finally(() => {
+            if(get(showLoadingModal)){
+                setLoadingModal(false)
+            }
         })
     }
 </script>

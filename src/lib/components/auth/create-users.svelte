@@ -6,6 +6,8 @@
     import { emailIsValid, Logger } from "$lib/helpers";
     import { createUser, setLoadingModal, setShowAppMessage, showMessage } from "$lib/actions";
     import Papa from 'papaparse'
+    import { onDestroy, onMount } from "svelte";
+    import { browser } from "$app/env";
 
     let list = [createNewUserInput()]
     let submitting = false
@@ -27,48 +29,42 @@
             setShowAppMessage(true)
         }
     }
-
+// dummy@shanedexter.me
     async function createUsersFromList(){
         submitting = true
-        userList.forEach((u, i) => {
-            createUser(u.email)
-            .then(result => {
+        let cleanList = removeDuplicates(userList)
+        
+        console.log('clean list: ', cleanList)
 
-                // if(result.user && !result.error){
-                    Logger(['result of creating user: ', result.user])
-                    list[i].success = !result.error
-                    list[i].user = result.user
-                    list[i].error = result.error
-                // }
-
-
-            })
-            .catch(err => {
-                Logger(['error creating user: ', err])
-                // list[i].success = false
-                // list[i].error = newUser.error
-            })
+        const results = await fetch("/api/create-user", {
+            method: "POST",
+            body: JSON.stringify({emailList: cleanList})
         })
 
-        // submitting = 
-        // userList.forEach(async (u, i) => {
-        //     let newUser = await createUser(u.email)
-        //     if(newUser.error){
-        //         Logger(['error creating user: ', newUser.error])
-        //         list[i].success = false
-        //         list[i].error = newUser.error
-        //     }
-        //     else {
-        //         Logger(['created user: ', newUser.user])
-        //         list[i].success = true
-        //         list[i].user = newUser
-        //     }
-        // })
+        const parsed = await results.json()
+
+        console.log('res.json: ', parsed)
+
+        if(parsed.promiseResult){
+            parsed.promiseResult.forEach((newUser, index) => {
+                list[index].success = !newUser.error
+    
+                if(!newUser.error && newUser.data){
+                    list[index].user = newUser.data
+                }
+                else if(newUser.error){
+                    list[index].error = newUser.error
+                }
+            })
+        }
+        
     }
 
-    function createNewUserInput(){
+    function makeId(){ return nanoid(12)}
+
+    function createNewUserInput(id = makeId()){
         return {
-            id: nanoid(12),
+            id,
             email: '',
             user: null,
             error: null,
@@ -101,6 +97,7 @@
                         user: null,
                         success: null,
                     }
+                    
                     if(Array.isArray(row) && row[0] && row[0] !== 'email'){
                         n.email = (row[0] as string)
                         // only add unique emails
@@ -119,7 +116,14 @@
                     }
                 })
 
-                list = list.concat(newList)
+                let stringified = JSON.stringify(list)
+
+                list = list
+                    .concat(newList)
+                    .filter(listItem => {
+                        return listItem.email !== "" 
+                            && stringified.indexOf(listItem.email) === -1
+                    })
 
                 setTimeout(() => {
                     setLoadingModal(false)
@@ -128,9 +132,17 @@
         }
     }
 
+    function removeDuplicates(array){
+        let presence = {}
+        return array.filter(item => {
+            return !presence[item.email] && (presence[item.email] = item.email)
+        })
+    }
+
     const hasAllEmails = () => list.filter(i => emailIsValid(i.email)).length === list.length
 
     function updateEmail(index: number, newValue: string){
+        console.log('updating email')
         list[index].email = newValue
     }
     function remove(index: number){
@@ -144,6 +156,50 @@
         false: 'Failed!',
         true: 'Success!',
     }
+
+    const returnKeyHandler = (e) => {
+        if(e.key === 'Enter' || e.code.indexOf("Enter") !== -1){
+            console.log('handling return key: ', e)
+            let active = document.activeElement
+            console.log('active element: ', active)
+            if(active){
+                let id = active.id
+                let ind = userList.findIndex(item => item.id === id)
+                console.log('index of input: ', ind)
+                // add input at index and focus
+                let newList = [...list]
+                let newInput = createNewUserInput()
+
+                console.log('created new input: ', newInput)
+
+                if(ind+1 === newList.length){
+                    console.log('pushing...')
+                    newList.push(newInput)
+                }
+                else if(ind !== -1){
+                    newList.splice(ind+1, 0, newInput)
+                    console.log('splicing...')
+                }
+                list = newList
+
+                // move to next input using new input ID
+                setTimeout(() => {
+                    let focusTarget = document.getElementById(newInput.id)
+                    console.log('focus target: ', focusTarget, newInput.id)
+                    focusTarget && focusTarget.focus && focusTarget.focus()
+                }, 100)
+            }
+        }
+
+    }
+
+
+    onMount(() => {
+        browser && document.addEventListener('keydown', returnKeyHandler, false)
+    })
+    onDestroy(() => {
+        browser && document.removeEventListener('keydown', returnKeyHandler, false)
+    })
 </script>
 
 <style>
@@ -274,7 +330,7 @@
 
     <div class="user-list">
         {#if submitting}
-            {#each userList as item, index}
+            {#each userList as item (item.id)}
                 <div class="user-progress-display flex jc-start">
                     <div class="info flex">
                         <div class="scale flex">
@@ -308,6 +364,7 @@
                         onUpdate={({target}) => updateEmail(index, target.value)}
                         placeholder="Enter the user's email"
                         style="width:100%;"
+                        inputId={item.id}
                     />
                 </div>
             {/each}

@@ -1,4 +1,6 @@
 <script lang="ts">
+import { goto } from "$app/navigation";
+
     import { getTrades, revealPlayerCard } from "$lib/actions";
     import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
     import { calculatePlayerInventory, getRelevantTrades, Logger, makeGamePlayersAsObject, valueWithSymbol } from "$lib/helpers";
@@ -36,6 +38,16 @@
     export let nextRound: () => any = () => console.log('next round')
     export let clearRevealInterval: () => void = () => null
 
+    let desiredRound = game.round
+    let canUseNext = true
+    function goToNextRound(){
+        desiredRound = game.round + 1
+        canUseNext = false
+        setTimeout(() => {
+            nextRound()
+        }, 100)
+    }
+
     function withSymbol(val){
         let symbol = val < 0 ? '-' : ''
         let stringVal: any = String(val)
@@ -70,6 +82,9 @@
         && update.completed 
         && getFinal(game.game_id)
 
+        if(desiredRound === game.round){
+            canUseNext = true
+        }
     })
 
 
@@ -204,9 +219,6 @@
         return endGameHand
     }
 
-    function getEndGameTrades(){
-
-    }
 </script>
 
 <section id="game">
@@ -218,6 +230,16 @@
         />
         <SectionLabels />
 
+        <!-- <p class="desired-round">
+            <span>
+                {desiredRound}
+            </span>
+            -vs-
+            <span>
+                {game.round}
+            </span>
+        </p> -->
+        
         <!-- game main -->
 
         <!-- <div class="div flex" style="position:fixed; bottom: 50px; right: 50px; font-size: 0.65em;"> -->
@@ -263,9 +285,15 @@
                             {#if !game.started && !game.ended && game.round === 0}
                                 <Button action={startGame} label="Start Game" disabled={!haveRequiredRoles} />
                             {:else if game.started && !game.ended && game.round < 32}
-                                <Button action={nextRound} label="Next Round" />
+                                <!-- <Button action={nextRound} label="Next Round" /> -->
+                                <Button 
+                                    action={goToNextRound} 
+                                    label="Next Round" 
+                                    disabled={desiredRound !== game.round}
+                                />
                             {:else if game.round === 32 }
-                                <Button action={nextRound} label="Final Round" />
+                                <!-- <Button action={nextRound} label="Final Round" /> -->
+                                <Button action={goToNextRound} label="Final Round" />
                             {:else if game.ended}
                                 <div class="game-completed">
                                     Game Completed
@@ -319,6 +347,12 @@
 </section>
 
 <style>
+
+    p.desired-round {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+    }
 
     .game-completed {
         font-size: 0.85em;

@@ -213,7 +213,7 @@ import { get } from 'svelte/store';
                     || activeGame.ended !== game.ended
                     || JSON.stringify(activeGame.deck) !== JSON.stringify(game.deck)
                 ){
-                    Logger(['_layout:: udpating layouts local game: ', game])
+                    Logger([`_layout:: updating layout's local game: `, game])
                     activeGame = {...game}
                     // if(game.ended){
                     //     removeFromRecord()
@@ -250,6 +250,7 @@ import { get } from 'svelte/store';
 
     afterUpdate(() => {
         if(authChecked && !activeUser.id && nonRedirectPaths.indexOf($page.path) === -1){
+            Logger(['afterUpdate() triggered'])
             redirect('/')
         }
     })

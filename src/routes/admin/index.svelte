@@ -12,6 +12,9 @@
                         <Icon icon="home" />
                     </div>
                 </div>
+
+                <p class="small">{adminEmail}</p>
+
                 <div 
                     class="admin-tool flex jc-start" 
                     on:click={() => setView('create-user')}
@@ -63,51 +66,32 @@
     import { browser } from "$app/env";
     import { goto } from "$app/navigation";
     import { checkIfAdmin } from "$lib/actions";
-import LoadingText from "$lib/components/app/loading-text.svelte";
+    import LoadingText from "$lib/components/app/loading-text.svelte";
     import CreateUsers from "$lib/components/auth/create-users.svelte";
     import Icon from "$lib/components/icon/icon.svelte";
-    import { Logger } from "$lib/helpers";
+    import { Logger, redirect } from "$lib/helpers";
     import { currentUser } from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     let view = 'create-user'
 
-    const admins = {
-        'winger.shane@gmail.com': true,
-        'shane@fulcrum.house': true,
-        'info@fulcrum.house': true,
-        'hello@shanedexter.me': true,
-        'dev@shanedexter.me': true,
-        'work@shanedexter.me': true,
-        'p.tulip@imperial.ac.uk': true,
-    }
-
-    let adminList = []
-
-    // let count = 0
     let canView = false
     let checking = true
+    let adminEmail = ""
 
     function setView(newView){
         view = newView
     }
     function home(){
-        browser && goto('/')
+        browser && redirect('/')
     }
 
     currentUser.subscribe(async (newUser) => {
-        // if(newUser.id && newUser.email && admins[newUser.email]){
-        //     console.log('user is admin... ', count)
-        // }
-        // count += 1
-        // console.log('count: ', count)
-
-        // check admin
-
         let adminRecord = await getAdminList(newUser)
         console.log('admin record: ', adminRecord)
         setTimeout(() => {
-            checking = false
             canView = adminRecord && adminRecord.active
+            adminEmail = adminRecord.email
+            checking = false
         }, 1000)
 
     })
@@ -121,6 +105,12 @@ import LoadingText from "$lib/components/app/loading-text.svelte";
 </script>
 
 <style>
+    .small {
+        font-size: 0.7em;
+        width: 100%;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
     /* .is-loading {
         height: 15px;
         border-radius: 10px;
@@ -184,6 +174,13 @@ import LoadingText from "$lib/components/app/loading-text.svelte";
     }
 
     .title {
-        width: 100%
+        width: 100%;
+        margin: 24px 0 25px;
+        padding-bottom: 5px;
+        border-bottom: solid thin lightgray;
+    }
+
+    .title h3 {
+        margin: 0 0 10px;
     }
 </style>

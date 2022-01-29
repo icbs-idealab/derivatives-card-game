@@ -2,6 +2,7 @@
     <input 
         type="text"
         placeholder={placeholder}
+        id={inputId}
         on:input={onUpdate}
         value={value}
     />
@@ -17,6 +18,7 @@
     export let value: string = 'Initial Value'
     export let placeholder: string = 'Enter your text here'
     export let icon: string = ''
+    export let inputId: string = ''
     export let onUpdate: (e: any) => any = (e) => {
         console.log('updated value: ', e.target.value)
     }

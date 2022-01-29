@@ -4,6 +4,7 @@
         // displayErrorReporter,
         // displayRules,
         downloadGameData,
+        getArchiveData,
         getArchives,
         // endGame,
         leaveGame,
@@ -16,7 +17,7 @@
     import type { AppGame } from "$lib/types";
     import AppMenuItem from "./app-menu-item.svelte";
     import fileSaver from 'file-saver'
-    import { Logger, redirect } from "$lib/helpers";
+    import { Logger, parseArchives, redirect } from "$lib/helpers";
     import { onMount } from "svelte";
     import { page } from "$app/stores";
     import { browser } from "$app/env";
@@ -31,53 +32,68 @@
     export let inRevealPhase: boolean = false
 
     function end(){
-        // console.log('would end game')
         showEndGameModal.set(true)
     }
 
-    function download(game){
+    function goToAdmin(){
+        redirect('/admin')
+    }
+
+    async function download(game){
         setLoadingModal(true)
 
         let line1 = 'game_id,market,actor,actor_id,price,round,type,date,time';
         let csv = `${line1}\n`
 
-        if(game.game_id){
+        let findPlayer = (id, players) => {
+            console.log('player from players: ', players)
+            console.log('with id: ', id)
+            // let pIndex = players.data.findIndex(player => player.user_id === id)
+            let pIndex = players.findIndex(player => player.user_id === id)
+            Logger(['p index: ', players[pIndex]])
+            if(pIndex && id){
+                return players[pIndex].player_name
+            }
+            else{
+                return ''
+            }
+        }
+
+        let getTime = (date) => {
+            let d = new Date(date)
+            return `${d.getHours()}:${d.getMinutes()}:${d.getMilliseconds()}`
+        }
+
+        let getDate = (date) => {
+            let d = new Date(date)
+            return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`
+        }
+
+        let getFile = () => {
+            let fileName = `icbs_derivatives_${game.game_id}_trades.csv`
+            let blob = new Blob([csv], {type: 'text/plain;charset=utf8'})
+            saveAs(blob, fileName)
+        }
+
+
+        if(game.game_id && !game.ended){
             downloadGameData(game.game_id)
             .then(results => {
                 Logger(['got game data: ', results])
                 let {trades, players} = results
 
-                let findPlayer = (id) => {
-                    let pIndex = players.data.findIndex(player => player.user_id === id)
-                    Logger(['p index: ', players.data[pIndex]])
-                    if(pIndex && id){
-                        return players.data[pIndex].player_name
-                    }
-                    else{
-                        return ''
-                    }
-                }
-
-                let getTime = (date) => {
-                    let d = new Date(date)
-                    return `${d.getHours()}:${d.getMinutes()}:${d.getMilliseconds()}`
-                }
-
-                let getDate = (date) => {
-                    let d = new Date(date)
-                    return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`
-                }
-
                 trades.data.map(trade => {
-                    csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)},${getTime(trade.created_at)}\n`
+                    csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor, players.data)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)},${getTime(trade.created_at)}\n`
                 })
                 
                 // setLoadingModal(false)
                 Logger(['output csv: ', csv])
 
-                let fileName = `icbs_derivatives_${game.game_id}_trades.csv`
-                let blob = new Blob([csv], {type: 'text/plain;charset=utf8'})
-                saveAs(blob, fileName)
+                // let fileName = `icbs_derivatives_${game.game_id}_trades.csv`
+                // let blob = new Blob([csv], {type: 'text/plain;charset=utf8'})
+                // saveAs(blob, fileName)
+
+                getFile()
 
             })
             .catch(err => {
@@ -94,6 +110,22 @@
                 // console.log('output csv: ', csv)
             })
         }  
+        else if(game.game_id){
+            let targetArch
+            const {data, error} = await getArchiveData(game.game_id)
+            let parsedArchs = parseArchives(data)
+            console.log('parsed archs: ', parsedArchs)
+
+            if(parsedArchs.length){
+                targetArch = parsedArchs[0]
+                targetArch.trades.map(trade => {
+                    csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor, targetArch.players)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)},${getTime(trade.created_at)}\n`
+                })
+
+                getFile()
+            }
+            setLoadingModal(false)
+        }
         else{
             setLoadingModal(false)
             showMessage({
@@ -182,16 +214,28 @@
                 {/if}
             {/each}
         
-            {#if $currentGame.admin_id === $currentUser.id && $currentGame.game_id && !$currentGame.ended}
+            {#if $currentGame.admin_id === $currentUser.id}
                 <li class="end-game-button">
                     <AppMenuItem
-                        bg="var(--red)"
+                        bg="var(--blue)"
                         color="var(--lm-lighter)"
-                        icon="handStop"
-                        label="End Game"
-                        action={end}
+                        icon="users"
+                        label="Admin Panel"
+                        action={goToAdmin}
                     />
                 </li>
+
+                {#if $currentGame.game_id && !$currentGame.ended}
+                    <li class="end-game-button">
+                        <AppMenuItem
+                            bg="var(--red)"
+                            color="var(--lm-lighter)"
+                            icon="handStop"
+                            label="End Game"
+                            action={end}
+                        />
+                    </li>
+                {/if}
             {/if}
         </div>
     </ul>
@@ -225,8 +269,8 @@
         left: unset;        
         left: 20px;
         bottom: 25px;
-        flex-direction: column-reverse;
-        align-items: flex-start;
+        /* flex-direction: column-reverse;
+        align-items: flex-start; */
     }
     
     .app-menu[data-offset="true"] li {
@@ -244,6 +288,16 @@
         align-items: center;
         justify-content: flex-start;
         position: relative;
+    }
+
+    .app-menu[data-offset="true"] .normal-menu-content {
+        flex-direction: column-reverse;
+        align-items: flex-start;
+    }
+
+    .app-menu[data-offset="true"] .normal-menu-content li {
+        margin-top: 5px;
+        width: 100%;
     }
 
     .reveal-menu-content {

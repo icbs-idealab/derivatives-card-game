@@ -229,10 +229,12 @@
         return nextRound()
         .catch(err => {
             Logger(['err loading: ', err])
+            return {success: false, err}
         })
         .finally(() => {
             setLoadingModal(false)
-            return true
+            return {success: true}
+            // return true
         })
     }
 

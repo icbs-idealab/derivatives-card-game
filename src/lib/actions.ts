@@ -402,10 +402,21 @@ export async function joinLobby(game_id, player){
 
 // GAME
 
-export const getArchives = async (user_id) => {
-    return await supabase.from('archives')
-    .select()
-    .textSearch('participants', user_id)
+export const getArchives = async (user_id, game_id = '') => {
+    if(!game_id && user_id){
+        return await supabase.from('archives')
+        .select()
+        .textSearch('participants', user_id)
+    }
+    else if(game_id && user_id){
+        return await supabase.from('archives')
+        .select()
+        .textSearch('game_id', game_id)
+    }
+    else{
+        return {data: [], error: {message: 'no user id or game id provided!'}}
+    }
+    
 } 
 
 export const createNewGame = async ({user, creatorRole, maximumSpread, playerName}: NewGameProps) => {
@@ -525,16 +536,16 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
                 return err
                 // log error in app
             })
-            .finally(() => {
-                setLoadingModal(false)
-            })
+            // .finally(() => {
+            //     setLoadingModal(false)
+            // })
 
     // }
 }
 
 const viewCreatedGame = async (creationResults: any[]) => {
     let game = creationResults.filter(cr => cr.type === 'game')[0].data
-    reloadAfterRedirect.set(true)
+    // reloadAfterRedirect.set(true)
     Logger(['game: ', game])
     if(game){
         currentGame.set(parseGameData(game))
@@ -991,4 +1002,8 @@ export function showMessage(params: Partial<MessageParams>){
 
 export function setShowAppMessage(newState){
     showAppMessage.set(newState)
+}
+
+export async function getArchiveData(game_id = ''){
+    return getArchives( get(currentUser).id, game_id )
 }
