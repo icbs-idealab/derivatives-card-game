@@ -26,6 +26,17 @@
                         <div class="marker"></div>
                     {/if}
                 </div>
+                <div 
+                    class="admin-tool flex jc-start" 
+                    on:click={() => setView('view-users')}
+                    style="width: 100%"    
+                >
+                    <Icon icon="users" />
+                    <p>View Users</p>
+                    {#if view === 'view-users'}
+                        <div class="marker"></div>
+                    {/if}
+                </div>
                 <!-- <div 
                     class="admin-tool flex jc-start" 
                     on:click={() => setView('view-issues')}
@@ -41,6 +52,12 @@
             <div class="content">
                 {#if view === 'create-user'}
                     <CreateUsers />
+                {/if}
+                {#if view === 'view-users'}
+                    <!-- <ViewUsers /> -->
+                    <div>
+                        Feature Coming Soon...
+                    </div>
                 {/if}
             </div>
         </div>
@@ -68,6 +85,7 @@
     import { checkIfAdmin } from "$lib/actions";
     import LoadingText from "$lib/components/app/loading-text.svelte";
     import CreateUsers from "$lib/components/auth/create-users.svelte";
+import ViewUsers from "$lib/components/auth/view-users.svelte";
     import Icon from "$lib/components/icon/icon.svelte";
     import { Logger, redirect } from "$lib/helpers";
     import { currentUser } from "$lib/state";

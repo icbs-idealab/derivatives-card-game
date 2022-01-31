@@ -69,6 +69,10 @@ export const checkIfPasswordChanged = async (user) => {
         .limit(1)
 }
 
+export const checkUserCache = async () => {
+    // check 
+}
+
 export const updatePassword = async (password: string) => {
     let returnObject = {
         user: null,
@@ -137,6 +141,12 @@ export const checkIfAdmin = async (user) => {
         .select("*")
         .eq('email', user.email)
         .limit(1)
+}
+
+export const getUserList = async () => {
+    return await supabase
+        .from('created-users')
+        .select("*")
 }
 
 // PLAYER

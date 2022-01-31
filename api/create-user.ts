@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 const supabaseURL = process.env.VITE_SUPABASE_URL as string
 const anonKey = process.env.VITE_SUPABASE_ADMIN_KEY as string
+// const supabaseURL = process.env.VITE_SUPABASE_URL_TEST as string
+// const anonKey = process.env.VITE_SUPABASE_ADMIN_KEY_TEST as string
 export const supabase = createClient(supabaseURL, anonKey)
 
 export default async function handler(request, response) {
@@ -28,18 +30,35 @@ export default async function handler(request, response) {
         calls.push(
             async () => {
                 console.log('email in call: ', email)
-                return await supabase.auth.api.createUser({
+                const {data, error} = await supabase.auth.api.createUser({
                     email,
                     password
                 })
+
+                let accessibleUserRecord: {
+                    data?: any,
+                    error?: any,
+                } = {data: null, error: null}
+
+                if(!error){
+                    let insert = {
+                        id: data.id,
+                        email: data.email,
+                    }
+                    accessibleUserRecord = await supabase
+                        .from('created-users')
+                        .insert(insert)
+                        .select('*')
+                }
+
+                return {
+                    created: data,
+                    creationError: error,
+                    stored: accessibleUserRecord.data,
+                    storageError: accessibleUserRecord.error,
+                }
             }
         )
-
-        // console.log('error creating user? : ', error)
-
-        // emailList[index].success = !error
-        // emailList[index].user = user
-        // emailList[index].error = error
     })
 
     Promise.all(
