@@ -40,6 +40,13 @@ import { goto } from "$app/navigation";
 
     let desiredRound = game.round
     let canUseNext = true
+    function initiateGame(){
+        desiredRound = game.round + 1
+        canUseNext = false
+        setTimeout(() => {
+            startGame()
+        }, 100)
+    }
     function goToNextRound(){
         desiredRound = game.round + 1
         canUseNext = false
@@ -48,13 +55,14 @@ import { goto } from "$app/navigation";
         }, 100)
     }
 
-    function withSymbol(val){
-        let symbol = val < 0 ? '-' : ''
-        let stringVal: any = String(val)
-        let append = stringVal[stringVal.length-1] === '0' && stringVal !== '0' ? '0' : ''
-
-        return `${symbol}$${Math.abs(val/100)}${append}`
-    }
+    // function withSymbol(val){
+    //     let symbol = val < 0 ? '-' : ''
+    //     let stringVal: any = String(Math.abs(val))
+    //     let offset = stringVal.length - 2
+    //     let by100 = stringVal.substr(0, offset) + '.' + stringVal.substr(offset)
+    //     let printValue = `${by100}`
+    //     return `${symbol}$${printValue}`
+    // }
 
     async function getFinal(game_id){
         if(game_id){
@@ -72,7 +80,7 @@ import { goto } from "$app/navigation";
                 let count = contracts[last]
                 let bonus = count * 100
                 //
-                derivedFinalBalance = withSymbol(balance + bonus)
+                derivedFinalBalance = valueWithSymbol(balance + bonus)
             }
         }
     }
@@ -88,7 +96,7 @@ import { goto } from "$app/navigation";
     })
 
 
-    $:derivedBalance = withSymbol(balance)
+    $:derivedBalance = valueWithSymbol(balance)
     // $:derivedFinalBalance = playerRole && game && game.final_scores ? withSymbol(game.final_scores[playerRole].final) : ''
     // $:final = await getFinal()
     let derivedFinalBalance = null
@@ -283,10 +291,14 @@ import { goto } from "$app/navigation";
                     <div class="game-controls flex">
                         {#if playerRole && players && players[playerRole].is_admin}
                             {#if !game.started && !game.ended && game.round === 0}
-                                <Button action={startGame} label="Start Game" disabled={!haveRequiredRoles} />
+                                <Button
+                                    action={initiateGame}
+                                    label="Start Game"
+                                    disabled={!haveRequiredRoles}
+                                />
                             {:else if game.started && !game.ended && game.round < 32}
                                 <!-- <Button action={nextRound} label="Next Round" /> -->
-                                <Button 
+                                <Button
                                     action={goToNextRound} 
                                     label="Next Round" 
                                     disabled={desiredRound !== game.round}
@@ -318,6 +330,7 @@ import { goto } from "$app/navigation";
                             <p>Final Balance: { getEndGameBalance().final }</p>
                         {:else}
                             <p>Balance: { derivedBalance }</p>
+                            <!-- <p>Balance: { balance }</p> -->
                             {#if derivedFinalBalance !== null}
                                 <p>Final Balance: { derivedFinalBalance }</p>
                             {/if}

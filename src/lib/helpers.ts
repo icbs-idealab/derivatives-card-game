@@ -216,9 +216,13 @@ export function valueWithSymbol(val){
 }
 
 export function divBy100AsString(val){
-    let stringVal: any = String(val)
-    let append = stringVal[stringVal.length-1] === '0' && stringVal !== '0' ? '0' : ''
-    return `${Math.abs(val/100)}${append}`
+    // let stringVal: any = String(val)
+    // let append = stringVal[stringVal.length-1] === '0' && stringVal !== '0' ? '0' : ''
+    // return `${Math.abs(val/100)}${append}`
+    let stringVal: any = String(Math.abs(val))
+    let offset = stringVal.length - 2
+    let by100 = stringVal.substr(0, offset) + '.' + stringVal.substr(offset)
+    return by100
 }
 
 export function getReveals(ps, game): SuitReveals{
