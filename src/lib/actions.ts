@@ -27,6 +27,10 @@ export const createUser = async (email: string) => {
 
 export const resetUser = () => currentUser.update(() => ({...defaultUser}))
 
+
+// export const resetUserPasswordViaEmail = (email: string) => {
+
+// }
 // cannot subscribe to supabase users so will rely on calling this function whenever the _layout component is mounted to check for authenticated users
 
 export const getAuthenticatedUser = async () => {

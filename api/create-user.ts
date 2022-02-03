@@ -30,10 +30,11 @@ export default async function handler(request, response) {
         calls.push(
             async () => {
                 console.log('email in call: ', email)
-                const {data, error} = await supabase.auth.api.createUser({
-                    email,
-                    password
-                })
+                // const {data, error} = await supabase.auth.api.createUser({
+                //     email,
+                //     password
+                // })
+                const {data, error} = await supabase.auth.api.inviteUserByEmail(email)
 
                 let accessibleUserRecord: {
                     data?: any,

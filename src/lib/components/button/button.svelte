@@ -93,6 +93,20 @@
     text-transform: capitalize;
   }
 
+  [data-button-type="reset"] {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    text-decoration: underline;
+    /* color: white; */
+    text-transform: capitalize;
+  }
+
+  [data-button-type="reset"] .button-content {
+    padding: 0;
+  }
+
   [data-button-type="proceed"] {
     background: var(--dm-darker);
     color: white;

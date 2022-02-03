@@ -6,6 +6,7 @@
     import { appErrors } from "$lib/state";
     import { setLoadingModal, updateActiveUser } from "$lib/actions";
     import Icon from "../icon/icon.svelte";
+import { redirect } from "$lib/helpers";
     export let email: string = ''
     export let password: string = ''
     export let updateEmail = (value: string) => {}
@@ -52,6 +53,10 @@
         }
     }
 
+    function goToReset(){
+        redirect('/reset-password')
+    }
+
 </script>
 
 <div class="login">
@@ -63,9 +68,19 @@
     <div class="button-container">
         <Button type="proceed" label="Log-in" action={submit} />
     </div>
+    <div class="button-container">
+        <Button type="reset" label="Reset Password" action={goToReset} />
+        <!-- <a class="reset-link" href="/reset-password">Reset my password</a> -->
+    </div>
 </div>
 
 <style>
+    .reset-link {
+        text-decoration:underline;
+        font-size: 0.85em;
+        font-weight: 500;
+        color: rgb(50, 50, 50);
+    }
     .login {
         width: 100%;
         display: grid;

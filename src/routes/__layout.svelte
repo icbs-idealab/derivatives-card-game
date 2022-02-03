@@ -163,7 +163,7 @@ import { get } from 'svelte/store';
         else{
             console.log('path is: ', $page.path)
             activeUser = {id: null, user_metadata: {}}
-            $page.path !== "/" && $page.path !== "/admin" && $authChecked && redirect('/')
+            $page.path !== "/" && $page.path !== "/admin" && $page.path !== "/reset-password" && $authChecked && redirect('/')
         }
     }
 
@@ -246,7 +246,7 @@ import { get } from 'svelte/store';
         watch()
     })
 
-    let nonRedirectPaths = ['/', '/admin', '/update-password', '/account-verified']
+    let nonRedirectPaths = ['/', '/admin', '/update-password', '/reset-password', '/account-verified']
 
     afterUpdate(() => {
         if(authChecked && !activeUser.id && nonRedirectPaths.indexOf($page.path) === -1){
