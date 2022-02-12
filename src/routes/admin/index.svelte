@@ -15,51 +15,44 @@
 
                 <p class="small">{adminEmail}</p>
 
-                <div 
-                    class="admin-tool flex jc-start" 
-                    on:click={() => setView('create-user')}
-                    style="width: 100%"    
-                >
-                    <Icon icon="user" />
-                    <p>Create Users</p>
-                    {#if view === 'create-user'}
-                        <div class="marker"></div>
-                    {/if}
+                <div class="admin-tools">
+                    {#each adminTools as tool}
+                        <div 
+                            class="admin-tool flex jc-start" 
+                            on:click={() => !tool.disabled && setView(tool.id)}
+                            data-disabled={tool.disabled}
+                        >
+                            <Icon icon={tool.icon} />
+                            <p class="tool-label">{tool.label}</p>
+
+                            {#if view === tool.id}
+                                <div class="marker"></div>
+                            {/if}    
+                        </div>
+                    {/each}
                 </div>
-                <div 
-                    class="admin-tool flex jc-start" 
-                    on:click={() => setView('view-users')}
-                    style="width: 100%"    
-                >
-                    <Icon icon="users" />
-                    <p>View Users</p>
-                    {#if view === 'view-users'}
-                        <div class="marker"></div>
-                    {/if}
-                </div>
-                <!-- <div 
-                    class="admin-tool flex jc-start" 
-                    on:click={() => setView('view-issues')}
-                    style="width: 100%"    
-                >
-                    <Icon icon="bug" />
-                    <p>View Issues</p>
-                    {#if view === 'view-issues'}
-                        <div class="marker"></div>
-                    {/if}
-                </div> -->
+
             </div>
+
+            <!-- output -->
+
             <div class="content">
-                {#if view === 'create-user'}
+                {#if view === 'create-users'}
                     <CreateUsers />
                 {/if}
                 {#if view === 'view-users'}
-                    <!-- <ViewUsers /> -->
-                    <div>
-                        Feature Coming Soon...
-                    </div>
+                    <ViewUsers />
+                {/if}
+                {#if view === 'view-games'}
+                    <ViewGames />
+                {/if}
+                {#if view === 'view-trades'}
+                    <ViewTrades />
                 {/if}
             </div>
+            
+            <!-- end output -->
+
         </div>
     {:else}
         <div class="no-auth flex fd-col">
@@ -83,18 +76,45 @@
     import { browser } from "$app/env";
     import { goto } from "$app/navigation";
     import { checkIfAdmin } from "$lib/actions";
+    import ViewGames from "$lib/components/admin/view-games.svelte";
     import LoadingText from "$lib/components/app/loading-text.svelte";
     import CreateUsers from "$lib/components/auth/create-users.svelte";
-import ViewUsers from "$lib/components/auth/view-users.svelte";
+    // import ViewUsers from "$lib/components/auth/view-users.svelte";
+    import ViewUsers from "$lib/components/admin/view-users.svelte";
     import Icon from "$lib/components/icon/icon.svelte";
     import { Logger, redirect } from "$lib/helpers";
     import { currentUser } from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
-    let view = 'create-user'
+    import ViewTrades from "$lib/components/admin/view-trades.svelte";
+    let view = 'create-users'
 
     let canView = false
     let checking = true
     let adminEmail = ""
+    let adminTools = [
+        {
+            id: 'create-users',
+            label: 'Create Users',
+            icon: 'add'
+        },
+        {
+            id: 'view-trades',
+            label: 'View Trades by ID',
+            icon: 'list'
+        },
+        {
+            id: 'view-users',
+            label: 'User List',
+            icon: 'users',
+            disabled: true
+        },
+        {
+            id: 'view-games',
+            label: 'View Games',
+            icon: 'game',
+            disabled: true
+        },
+    ]
 
     function setView(newView){
         view = newView
@@ -123,29 +143,17 @@ import ViewUsers from "$lib/components/auth/view-users.svelte";
 </script>
 
 <style>
+
+    [data-disabled="true"]{
+        opacity: 0.25!important;
+    }
+
     .small {
         font-size: 0.7em;
         width: 100%;
         overflow: hidden;
         margin-bottom: 20px;
     }
-    /* .is-loading {
-        height: 15px;
-        border-radius: 10px;
-        border: solid thin lightgray;
-        width: 400px;
-    }
-
-    .auth-loaing {
-        width: 100%;
-        max-width: 600px
-    } */
-
-    /* .admin-page {
-        padding: 0px;
-        width: 100%;
-        min-height: 100vh;
-    } */
 
     .admin {
         padding: 40px;
@@ -175,6 +183,7 @@ import ViewUsers from "$lib/components/auth/view-users.svelte";
         border-radius: 4px;
         position: relative;
         margin-bottom: 10px;
+        cursor: default!important;
     }
 
     .admin-tool p {

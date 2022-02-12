@@ -4,87 +4,16 @@
     import ClickWrapper from "$lib/components/interaction/click-wrapper.svelte";
     import {nanoid} from 'nanoid'
     import { emailIsValid, Logger } from "$lib/helpers";
-    import { createUser, getUserList, setLoadingModal, setShowAppMessage, showMessage } from "$lib/actions";
+    import { createUser, setLoadingModal, setShowAppMessage, showMessage } from "$lib/actions";
     import Papa from 'papaparse'
     import { onDestroy, onMount } from "svelte";
     import { browser } from "$app/env";
 
-    let list = [createNewUserInput()]
+    let list = []
     let submitting = false
-    let submitted = false
     $: userList = list
     
-    function submit(){
-        let go = hasAllEmails()
-        Logger(['has all emails: ', go])
-        go && createUsersFromList()
-        !go && showError()
-
-        function showError(){
-            showMessage({
-                message: 'There are invalid emails in your list. Please check and correct them.',
-                errorMessage: '',
-                timestamp: Date.now()
-            })
-
-            setShowAppMessage(true)
-        }
-    }
-// dummy@shanedexter.me
-    async function createUsersFromList(){
-        submitting = true
-        let cleanList = removeDuplicates(userList)
-        
-        console.log('clean list: ', cleanList)
-
-        const results = await fetch("/api/create-user", {
-            method: "POST",
-            body: JSON.stringify({emailList: cleanList})
-        })
-
-        const parsed = await results.json()
-
-        console.log('res.json: ', parsed)
-
-        if(parsed.promiseResult){
-            parsed.promiseResult.forEach((newUser, index) => {
-                list[index].success = !newUser.error
-    
-                if(!newUser.error && newUser.data){
-                    list[index].user = newUser.data
-                }
-                else if(newUser.error){
-                    list[index].error = newUser.error
-                }
-            })
-
-            submitted = true
-        }
-        
-    }
-
-    function makeId(){ return nanoid(12)}
-
-    function createNewUserInput(id = makeId()){
-        return {
-            id,
-            email: '',
-            user: null,
-            error: null,
-            success: null,
-        }
-    }
-
-    function add(){
-        Logger(['adding...'])
-        let n = createNewUserInput()
-        list = list.concat([n])
-    }
-
-    function clear(){
-        list = [createNewUserInput()]
-        submitting = false
-    }
+    // dummy@shanedexter.me
 
     function selectFile(e){
         // display file selector
@@ -147,65 +76,18 @@
         })
     }
 
-    const hasAllEmails = () => list.filter(i => emailIsValid(i.email)).length === list.length
-
-    function updateEmail(index: number, newValue: string){
-        // console.log('updating email')
-        list[index].email = newValue
-    }
-    function remove(index: number){
-        let newList = [...list]
-        newList[index] = null
-        list = newList.filter(i => i !== null)
-    }
-
     const successStrings = {
         null: 'Pending',
         false: 'Failed!',
         true: 'Success!',
     }
-
-    const returnKeyHandler = (e) => {
-        if(e.key === 'Enter' || e.code.indexOf("Enter") !== -1){
-            console.log('handling return key: ', e)
-            let active = document.activeElement
-            console.log('active element: ', active)
-            if(active){
-                let id = active.id
-                let ind = userList.findIndex(item => item.id === id)
-                console.log('index of input: ', ind)
-                // add input at index and focus
-                let newList = [...list]
-                let newInput = createNewUserInput()
-
-                console.log('created new input: ', newInput)
-
-                if(ind+1 === newList.length){
-                    console.log('pushing...')
-                    newList.push(newInput)
-                }
-                else if(ind !== -1){
-                    newList.splice(ind+1, 0, newInput)
-                    console.log('splicing...')
-                }
-                list = newList
-
-                // move to next input using new input ID
-                setTimeout(() => {
-                    let focusTarget = document.getElementById(newInput.id)
-                    console.log('focus target: ', focusTarget, newInput.id)
-                    focusTarget && focusTarget.focus && focusTarget.focus()
-                }, 100)
-            }
-        }
-
+    
+    function clear(){
+        console.log('would clear')
     }
 
     onMount(() => {
-        browser && document.addEventListener('keydown', returnKeyHandler, false)
-    })
-    onDestroy(() => {
-        browser && document.removeEventListener('keydown', returnKeyHandler, false)
+
     })
 </script>
 
@@ -298,17 +180,14 @@
         top: -9999px;
         left: -9999px;
     }
-
-    #reset-button {
-        margin-right: 10px;
-    }
 </style>
 
 <div class="create-users">
+    
     <div class="controls flex jc-between">
         <div class="flex jc-start">
             <div class="tool">
-                <ClickWrapper handler={add}>
+                <ClickWrapper handler={clear}>
                     <div class="flex jc-start">
                         <span class="button-label">Add Email</span>
                         <Icon icon="add" />
@@ -331,20 +210,12 @@
             </div>
         </div>
         
-        <div class="end flex">
-            <ClickWrapper handler={() => !submitting && clear()}>
-                <div class="add tool flex jc-start" id="reset-button">
-                    <p>Reset</p>
-                    <Icon icon="refresh" />
-                </div>
-            </ClickWrapper>
-            <ClickWrapper handler={submit}>
-                <div class="add tool flex jc-start">
-                    <p>Create Users</p>
-                    <Icon icon="save" />
-                </div>
-            </ClickWrapper>
-        </div>
+        <!-- <ClickWrapper handler={submit}>
+            <div class="add tool flex jc-start">
+                <p>Create Users</p>
+                <Icon icon="save" />
+            </div>
+        </ClickWrapper> -->
     </div>
 
     <div class="user-list">
@@ -372,19 +243,19 @@
             {#each userList as item, index}
                 <div class="user-email-input flex jc-start">
                     <div class="remove flex">
-                        <ClickWrapper handler={() => remove(index)}>
+                        <!-- <ClickWrapper handler={() => remove(index)}>
                             <div class="scale flex">
                                 <Icon icon="close" />
                             </div>
-                        </ClickWrapper>
+                        </ClickWrapper> -->
                     </div>
-                    <TextInput 
+                    <!-- <TextInput 
                         value={item.email}
                         onUpdate={({target}) => updateEmail(index, target.value)}
                         placeholder="Enter the user's email"
                         style="width:100%;"
                         inputId={item.id}
-                    />
+                    /> -->
                 </div>
             {/each}
         {/if}
