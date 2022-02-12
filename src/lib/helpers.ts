@@ -4,6 +4,9 @@ import { get } from "svelte/store";
 import { allRoleNames, defaultGamePlayer, emptyHand, emptyReveals, emptySuits, playerRevealRoundsArray, roleKeys } from "./constants";
 import { currentUser, gamePlayers } from "./state";
 import type { AppGamePlayer, AppGamePlayers, GameCard, Holder, SuitName, SuitReveals } from "./types";
+import fileSaver from 'file-saver'
+const {saveAs} = fileSaver
+
 const DEV = import.meta.env.VITE_DEV
 
 export function Logger(params: any[]){
@@ -255,4 +258,21 @@ export function parseArchives(list){
         // console.log('arch: ', mapped)
         return mapped
     })
+}
+
+export let getTime = (date) => {
+    let d = new Date(date)
+    return `${d.getHours()}:${d.getMinutes()}:${d.getMilliseconds()}`
+}
+
+export let getDate = (date) => {
+    let d = new Date(date)
+    return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`
+}
+
+export let makeCSV = (game_id: string, type: string, csvData: string) => {
+    let fileName = `icbs_derivatives_${game_id}_${type}.csv`
+    let blob = new Blob([csvData], {type: 'text/plain;charset=utf8'})
+    saveAs(blob, fileName)
+    saveAs
 }

@@ -9,13 +9,14 @@
             <!-- <span class="label-instructions">Enter a Game ID to list all associated trades.</span> -->
         </label>
         <div class="input-and-submit">
-            <input 
-                type="text" 
-                id="game-trades-by-id" 
-                name="game-trades-by-id" 
+            <input
+                type="text"
+                id="game-trades-by-id"
+                name="game-trades-by-id"
                 placeholder="Type here"
                 value={gameId}
-                >
+                on:input={handleInput}
+            >
             <button 
                 type="submit" 
                 on:click={submit}
@@ -34,10 +35,22 @@
                 </div>
             </div>
         {/if}
+
+        <!-- <p>{submitting}</p>
+        <p>{gameId}</p> -->
     
         {#if trades.length}
             <div class="trade-values flex jc-between fd-col">
-                <div class="trade-count">Found {trades.length} Trades</div>
+                <div class="controls flex jc-between">
+                    <div class="trade-count">Found {trades.length} Trades</div>
+                    <div class="buttons flex jc-end">
+                        <button 
+                            id="download-trades"
+                            on:click={downloadTradeData}
+                            disabled={downloading}
+                        > Download </button>
+                    </div>
+                </div>
                 <div class="trade-list">
                     <div class="admin-trade headers">
                         <div class="trade-attribute">#</div>
@@ -67,6 +80,18 @@
 </div>
 
 <style>
+
+    .controls {
+        width: 100%;
+        height: 50px;
+        margin-bottom: 10px;
+    }
+
+    .trade-count {
+        padding: 10px;
+        font-size: 12pt;
+        font-weight: bold;
+    }
 
     .admin-trade {
         display: grid;
@@ -100,14 +125,14 @@
     .trade-list {
         width: 100%;
         background: white;
-        min-height: calc(100% - 70px);
+        min-height: calc(100% - 90px);
         position: relative;
         overflow: hidden;
     }
     
     .list-output {
         overflow-y: scroll;
-        min-height: calc(100% - 70px - 40px);
+        min-height: calc(100% - 90px - 40px);
         position: relative;
         top: 40px;
         height: 100%;
@@ -128,14 +153,17 @@
         position: relative;
     }
 
+    button {
+        background-color: black;
+        color: white;
+    }
+
     .input-and-submit button {
         position: absolute;
         right: 4px;
         top: 4px;
         bottom: 4px;
         width: auto;
-        background-color: black;
-        color: white;
         padding-left: 30px;
         padding-right: 30px;
     }
@@ -198,11 +226,14 @@
 </style>
 
 <script lang="ts">
-    import {getTrades} from '$lib/actions'
+    import {getPlayerData, getTrades} from '$lib/actions'
+    import { getDate, getTime, makeCSV } from '$lib/helpers';
     import Loader from '../app/loader.svelte'
     let gameId: string = '' // eg 5EsiPBZ7idWG
     let submitting: boolean = false
+    let downloading: boolean = false
     let trades: any[] = []
+    let players: any[] = []
 
     function handleInput({target}){
         gameId = target.value
@@ -214,13 +245,35 @@
         submitting = false
     }
 
+    function findPlayer(id){
+        let pIndex = players.findIndex(player => player.user_id === id)
+        return players[pIndex].player_name
+    }
+
     async function findTrades(gameId: string){
         return new Promise( async (resolve, reject) => {
             const {data, error} = await getTrades(gameId)
+            const {data: pData, error: pError} = await getPlayerData(gameId)
             console.log('results: ', data)
             console.log('errors: ', error)
+            console.log('player results: ', pData)
+            console.log('player errors: ', pError)
             
-            if(data && data.length){ trades = data }
+
+            if(data && data.length && pData && pData.length){ 
+                trades = data
+                players = pData
+                // trades = data.map(tData => {
+                //     let actor = findPlayer(tData.actor)
+                //     if(actor && actor.player_name){
+                //         return {
+                //             ...tData,
+                //             actor
+                //         }
+                //     }
+                //     else return tData
+                // })
+            }
             else { trades = [] }
 
             data && !error && resolve({
@@ -230,5 +283,19 @@
 
             !data && error && reject(error)
         })
+    }
+
+    async function downloadTradeData(){
+        downloading = true
+
+        let line1 = 'game_id,market,actor,actor_id,price,round,type,date,time';
+        let csv = `${line1}\n`
+
+        trades.map(trade => {
+            csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)},${getTime(trade.created_at)}\n`
+        })
+
+        makeCSV(gameId, 'trades', csv)
+        downloading = false
     }
 </script>
