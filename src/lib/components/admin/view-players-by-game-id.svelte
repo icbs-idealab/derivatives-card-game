@@ -1,7 +1,7 @@
 <div class="view-games">
     <div class="view-title">
-        <h1>View Trades By ID</h1>
-        <p>Enter a game ID below to find and list all the trades associated with that game.</p>
+        <h1>View Players for a given Game ID</h1>
+        <p>Enter a game ID below to find and list all the players associated with that game.</p>
     </div> 
     <div class="game-id-input">
         <label for="game-trades-by-id" class="label">
@@ -27,49 +27,41 @@
 
     
     <div class="results">
-        {#if submitting}
+        <!-- {#if submitting}
             <div class="submitting">
-                <!-- <div class="loader-text">Finding trades</div> -->
                 <div class="loader-wrapper">
                     <Loader />
                 </div>
             </div>
-        {/if}
+        {/if} -->
 
         <!-- <p>{submitting}</p>
         <p>{gameId}</p> -->
     
-        {#if trades.length}
-            <div class="trade-values flex jc-between fd-col">
+        {#if players.length}
+            <div class="players-results flex jc-between fd-col">
                 <div class="controls flex jc-between">
-                    <div class="trade-count">Found {trades.length} Trades</div>
-                    <div class="buttons flex jc-end">
-                        <button 
-                            id="download-trades"
-                            on:click={downloadTradeData}
-                            disabled={downloading}
-                        > Download </button>
-                    </div>
+                    <div class="trade-count">Found {players.filter(p => p.user_id !== '').length} Players</div>
                 </div>
-                <div class="trade-list">
-                    <div class="admin-trade headers">
-                        <div class="trade-attribute">#</div>
-                        <div class="trade-attribute">market</div>
-                        <div class="trade-attribute">type</div>
-                        <div class="trade-attribute">actor</div>
-                        <div class="trade-attribute">round</div>
-                        <div class="trade-attribute">price</div>
+                <div class="player-list">
+                    <div class="admin-row headers">
+                        <div class="attribute">#</div>
+                        <div class="attribute">User Id</div>
+                        <div class="attribute">Role</div>
+                        <div class="attribute">Player Name</div>
+                        <div class="attribute">misc</div>
+                        <div class="attribute">misc</div>
                     </div>
-                    <div class="list-output">
-                        {#each trades as trade, index}
+                    <div class="list-output flex fd-col">
+                        {#each players as player, index}
                             <!-- <Trade {...trade} /> -->
-                            <div class="admin-trade">
+                            <div class="admin-row" data-role={player.role}>
                                 <div class="trade-attribute">{index + 1}</div>
-                                <div class="trade-attribute">{trade.market}</div>
-                                <div class="trade-attribute">{trade.type}</div>
-                                <div class="trade-attribute">{trade.actor}</div>
-                                <div class="trade-attribute">{trade.round}</div>
-                                <div class="trade-attribute">{trade.price}</div>
+                                <div class="trade-attribute"> {player.user_id} </div>
+                                <div class="trade-attribute">{player.role}</div>
+                                <div class="trade-attribute"> {player.player_name} </div>
+                                <div class="trade-attribute"> ... </div>
+                                <div class="trade-attribute"> ... </div>
                             </div>
                         {/each}
                     </div>
@@ -80,6 +72,16 @@
 </div>
 
 <style>
+    [data-role="clubs"]{order: 1}
+    [data-role="diamonds"]{order: 2}
+    [data-role="hearts"]{order: 3}
+    [data-role="spades"]{order: 4}
+    [data-role="speculator1"]{order: 5}
+    [data-role="speculator2"]{order: 6}
+    [data-role="speculator3"]{order: 7}
+    [data-role="speculator4"]{order: 8}
+    [data-role="speculator5"]{order: 9}
+    [data-role="speculator6"]{order: 10}
 
     .controls {
         width: 100%;
@@ -93,7 +95,8 @@
         font-weight: bold;
     }
 
-    .admin-trade {
+    .admin-row {
+        min-width: 100%;
         display: grid;
         grid-template-columns: 0.3fr 1fr 0.5fr 1.3fr 0.5fr 0.5fr;
         border-bottom: solid thin lightgray;
@@ -118,11 +121,11 @@
         border-radius: 6px;
     }
 
-    .trade-values {
+    .players-results {
         height: 100%;
     }
 
-    .trade-list {
+    .player-list {
         width: 100%;
         background: white;
         min-height: calc(100% - 90px);
@@ -134,12 +137,12 @@
         overflow-y: scroll;
         min-height: calc(100% - 90px - 40px);
         position: relative;
-        top: 40px;
+        top: 5px;
         padding-bottom: 40px;
         height: 100%;
     }
 
-    .admin-trade.headers {
+    .admin-row.headers {
         position: absolute;
         top: 0;
         left: 0;
@@ -233,7 +236,6 @@
     let gameId: string = '' // eg 5EsiPBZ7idWG
     let submitting: boolean = false
     let downloading: boolean = false
-    let trades: any[] = []
     let players: any[] = []
 
     function handleInput({target}){
@@ -242,7 +244,7 @@
 
     async function submit(){
         submitting = true
-        await findTrades(gameId)
+        await findPlayers(gameId)
         submitting = false
     }
 
@@ -251,31 +253,17 @@
         return players[pIndex].player_name
     }
 
-    async function findTrades(gameId: string){
+    async function findPlayers(gameId: string){
         return new Promise( async (resolve, reject) => {
-            const {data, error} = await getTrades(gameId)
-            const {data: pData, error: pError} = await getPlayerData(gameId)
+            const {data, error} = await getPlayerData(gameId)
             console.log('results: ', data)
             console.log('errors: ', error)
-            console.log('player results: ', pData)
-            console.log('player errors: ', pError)
             
 
-            if(data && data.length && pData && pData.length){ 
-                trades = data
-                players = pData
-                // trades = data.map(tData => {
-                //     let actor = findPlayer(tData.actor)
-                //     if(actor && actor.player_name){
-                //         return {
-                //             ...tData,
-                //             actor
-                //         }
-                //     }
-                //     else return tData
-                // })
+            if(data && data.length){ 
+                players = data
             }
-            else { trades = [] }
+            else { players = [] }
 
             data && !error && resolve({
                 data, 
@@ -284,19 +272,5 @@
 
             !data && error && reject(error)
         })
-    }
-
-    async function downloadTradeData(){
-        downloading = true
-
-        let line1 = 'game_id,market,actor,actor_id,price,round,type,date,time';
-        let csv = `${line1}\n`
-
-        trades.map(trade => {
-            csv += `${trade.game_id},${trade.market},${findPlayer(trade.actor)},${trade.actor},${trade.price},${trade.round},${trade.type},${getDate(trade.created_at)},${getTime(trade.created_at)}\n`
-        })
-
-        makeCSV(gameId, 'trades', csv)
-        downloading = false
     }
 </script>

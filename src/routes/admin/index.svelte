@@ -49,6 +49,9 @@
                 {#if view === 'view-trades'}
                     <ViewTrades />
                 {/if}
+                {#if view === 'view-players-by-game-id'}
+                    <ViewPlayersByGameId />
+                {/if}
             </div>
             
             <!-- end output -->
@@ -86,6 +89,7 @@
     import { currentUser } from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import ViewTrades from "$lib/components/admin/view-trades.svelte";
+    import ViewPlayersByGameId from "$lib/components/admin/view-players-by-game-id.svelte";
     let view = 'create-users'
 
     let canView = false
@@ -100,6 +104,11 @@
         {
             id: 'view-trades',
             label: 'View Trades by ID',
+            icon: 'list'
+        },
+        {
+            id: 'view-players-by-game-id',
+            label: 'Players by GameID',
             icon: 'list'
         },
         {
