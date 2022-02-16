@@ -32,7 +32,8 @@
             {#if activeUser.email}
                 <div class="current-user">
                     <!-- <p>UID: <span>{activeUser.id}</span> </p> -->
-                    <p>Email: <span>{activeUser.email}</span> </p>  
+                    <p style="font-size: 9.75pt;">Email: <span>{activeUser.email}</span> </p>  
+                    <p style="font-size: 9.75pt;">Player ID : <span>{activeUser.id}</span> </p>  
                 </div>
             {/if}
         </div>
@@ -83,7 +84,7 @@
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { getReveals, hasAll, Logger, redirect } from "$lib/helpers";
-    import { currentGame, currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage, gameChecked, showArchivesModal, gamePlayers} from "$lib/state";
+    import { currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage, gameChecked, showArchivesModal, gamePlayers, currentGame} from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
@@ -98,7 +99,7 @@
     import AppErrorMessage from '$lib/components/app/app-error-message.svelte';
     import AppArchiveModal from '$lib/components/app/app-archive-modal.svelte';
     import LoadingText from '$lib/components/app/loading-text.svelte';
-import { get } from 'svelte/store';
+    import { get } from 'svelte/store';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'

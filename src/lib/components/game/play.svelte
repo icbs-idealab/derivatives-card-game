@@ -55,6 +55,8 @@ import { goto } from "$app/navigation";
         }, 100)
     }
 
+    export let calcPlayerRole: () => any
+
     // function withSymbol(val){
     //     let symbol = val < 0 ? '-' : ''
     //     let stringVal: any = String(Math.abs(val))
@@ -203,6 +205,10 @@ import { goto } from "$app/navigation";
     }    
 
     function getEndGameBalance(){
+        typeof calcPlayerRole === 'function' && calcPlayerRole()
+        
+        console.log('playerRole: ', playerRole)
+
         let scores = {
             end: '$0.00',
             final: '$0.00',

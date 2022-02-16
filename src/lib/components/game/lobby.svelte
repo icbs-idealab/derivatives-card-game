@@ -125,6 +125,8 @@
         for(let role in selectedRoles){
             // selectedRoles[role]
             let currentRoleAssignment = assingments[role].user_id
+            
+            console.log('$debug: ', currentRoleAssignment)
 
             if(!currentRoleAssignment){
                 assingments[role].user_id = selectedRoles[role].user_id
@@ -136,39 +138,51 @@
             }
         }
 
-        for(let i = 0; i<6; i++){
-            // speculators cannot have assignments. no need to check for matching role
-            if(pool.length){
-                Logger(['setting speculator: ', i])
-                Logger(['pool player: ', pool[0]])
-                let role = `speculator${i + 1}`
-                assingments[role].user_id = pool[0].user_id
-                assingments[role].player_name = pool[0].player_name
-                pool.splice(0, 1)
-                // if(pool.length){
-                //     // i = 6
-                //     break
-                // }
+        // speculators cannot have assignments. no need to check for matching role
+        pool.forEach((poolPlayer, index) => {
+            Logger(['$debug setting speculator with pool index: ', index])
+            Logger(['$debug pool player: ', poolPlayer])
+            // 
+            let role = 'speculator' + (index + 1)
+            if(poolPlayer.user_id && poolPlayer.player_name){
+                assingments[role].user_id = poolPlayer.user_id
+                assingments[role].player_name = poolPlayer.player_name
             }
-            else{
-                Logger(['no players left in pool: ', [...pool]])
-                // remove unassigned speculators
-                let role = `speculator${i + 1}`
-                delete assingments[role]
-            }
-        }
+        })
+
+        // for(let i = 0; i<6; i++){
+        //     // speculators cannot have assignments. no need to check for matching role
+        //     if(pool.length){
+        //         Logger(['setting speculator: ', i])
+        //         Logger(['pool player: ', pool[0]])
+        //         let role = `speculator${i + 1}`
+        //         assingments[role].user_id = pool[0].user_id
+        //         assingments[role].player_name = pool[0].player_name
+        //         pool.splice(0, 1)
+        //         // if(pool.length){
+        //         //     // i = 6
+        //         //     break
+        //         // }
+        //     }
+        //     else{
+        //         Logger(['no players left in pool: ', [...pool]])
+        //         // remove unassigned speculators
+        //         let role = `speculator${i + 1}`
+        //         delete assingments[role]
+        //     }
+        // }
 
         let assignmentArray = []
         for(let role in assingments){
             assignmentArray.push(assingments[role])
         }
 
-        Logger(['assignments: ', assingments])
-        Logger(['pool: ', pool])
+        Logger(['$debug assignments: ', assingments])
+        Logger(['$debug pool: ', pool])
 
         assignGamePlayers(localUser.user_metadata.game_id, assignmentArray)
         .catch(err => {
-            Logger(['error assigning players: ', err])
+            Logger(['$debug error assigning players: ', err])
         })
         .finally(() => {
             setLoadingModal(false)

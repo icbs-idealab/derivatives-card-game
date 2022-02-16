@@ -51,11 +51,11 @@
             // let pIndex = players.data.findIndex(player => player.user_id === id)
             let pIndex = players.findIndex(player => player.user_id === id)
             Logger(['p index: ', players[pIndex]])
-            if(pIndex && id){
+            if(pIndex && id && players[pIndex]){
                 return players[pIndex].player_name
             }
             else{
-                return ''
+                return id
             }
         }
 

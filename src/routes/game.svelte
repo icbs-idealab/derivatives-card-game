@@ -52,11 +52,6 @@
     // let lastRevealed = {...emptySuitsBool}
     $:lastRevealed = setLastRevealed(game.round, showRevealRound)
 
-    $:serverRates = {
-        buy: playerRole ? players[playerRole].buy : 42,
-        sell: playerRole ? players[playerRole].sell : 38,
-    }
-
     function setLastRevealed(round, revealRound){
         let newlyRevealed = {...emptySuitsBool}
         if(playerRevealRounds[round] && !revealRound){
@@ -156,7 +151,7 @@
             for(let p in players){
                 // console.log('checking for role in ', p)
                 // console.log('role id is ', players[p].user_id)
-                if( playerId && players[p].user_id === playerId ){
+                if( players[p].user_id === playerId ){
                     playerRole = p
                     break
                 }
@@ -253,6 +248,8 @@
 
         // calc player scores
         let fPlayers = get(gamePlayers)
+        Logger(['stringified game players: ', JSON.stringify(fPlayers)])
+        Logger(['Fplayers: ', fPlayers])
         let playerResults: {[index: string]: {balance: number, contracts: any, lastRevealed: string}} = {}
 
         let allTrades = get(gameTrades)
@@ -477,6 +474,9 @@
         if(currentPlayer.user_metadata.game_id && !$serverSubscriptions.players){
             getAndWatchPlayers(currentPlayer.user_metadata.game_id)
         }
+        if(!playerRole){
+            calcPlayerRole()
+        }
     })
 
     onMount(() => {
@@ -513,6 +513,7 @@
                 revealsForRound={revealRoundState}
                 nextRound={goToNextRound}
                 lastRevealed={lastRevealed}
+                calcPlayerRole={calcPlayerRole}
                 clearRevealInterval={clearRevealInterval}
             />
 
