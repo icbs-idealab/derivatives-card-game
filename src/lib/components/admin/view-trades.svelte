@@ -49,6 +49,11 @@
                             on:click={downloadTradeData}
                             disabled={downloading}
                         > Download </button>
+                        <button 
+                            id="calculate-scores"
+                            on:click={calculateScores}
+                            disabled={calculating}
+                        > Calculate Scores </button>
                     </div>
                 </div>
                 <div class="trade-list">
@@ -159,6 +164,10 @@
         color: white;
     }
 
+    .buttons {
+        gap: 10px;
+    }
+
     .input-and-submit button {
         position: absolute;
         right: 4px;
@@ -227,14 +236,17 @@
 </style>
 
 <script lang="ts">
-    import {getPlayerData, getTrades} from '$lib/actions'
+    import {getPlayerData, getTrades, getGame} from '$lib/actions'
     import { getDate, getTime, makeCSV } from '$lib/helpers';
+    import { makePlayers } from '$lib/state';
     import Loader from '../app/loader.svelte'
     let gameId: string = '' // eg 5EsiPBZ7idWG
     let submitting: boolean = false
     let downloading: boolean = false
+    let calculating: boolean = false
     let trades: any[] = []
     let players: any[] = []
+    let game: any = {}
 
     function handleInput({target}){
         gameId = target.value
@@ -247,8 +259,14 @@
     }
 
     function findPlayer(id){
+        console.log('finding player by Id: ', id)
         let pIndex = players.findIndex(player => player.user_id === id)
-        return players[pIndex].player_name
+        if(players[pIndex]){
+            return players[pIndex].player_name
+        }
+        else{
+            return id
+        }
     }
 
     async function findTrades(gameId: string){
@@ -264,16 +282,6 @@
             if(data && data.length && pData && pData.length){ 
                 trades = data
                 players = pData
-                // trades = data.map(tData => {
-                //     let actor = findPlayer(tData.actor)
-                //     if(actor && actor.player_name){
-                //         return {
-                //             ...tData,
-                //             actor
-                //         }
-                //     }
-                //     else return tData
-                // })
             }
             else { trades = [] }
 
@@ -284,6 +292,134 @@
 
             !data && error && reject(error)
         })
+    }
+
+    async function findGame(gameId: string){
+        return new Promise( async (resolve, reject) => {
+            const {data, error} = await getGame(gameId)
+            console.log('results: ', data)
+            console.log('errors: ', error)
+            
+            if(data){ 
+                game = data
+            }
+            else { trades = [] }
+
+            data && !error && resolve({
+                data, 
+                error,
+            })
+
+            !data && error && reject(error)
+        })
+    }
+
+    async function findPlayers(gameId: string){
+        return new Promise( async (resolve, reject) => {
+            const {data, error} = await getPlayerData(gameId)
+            console.log('results: ', data)
+            console.log('errors: ', error)
+            
+
+            if(data && data.length){ 
+                players = data
+            }
+            else { players = [] }
+
+            data && !error && resolve({
+                data, 
+                error,
+            })
+
+            !data && error && reject(error)
+        })
+    }
+
+    function makeScoreObject(players){
+        calculating = true
+
+        let scores = {}
+
+        calculating = false
+    }
+
+    function makeMarketMap(players){
+        let map = {}
+
+        players.forEach(p => {
+            if(p.role.indexOf('speculator') === -1){
+                // only map the market holders
+                map[p.role] = p.user_id
+            }
+        })
+
+        return map
+    }
+
+    const valueChanges = {
+        buy: 1,
+        sell: -1,
+    }
+
+    const balanceChanges = {
+        buy: -1,
+        sell: 1,
+    }
+
+    const makeDefaultScoreObject = () => ({
+        contracts: {
+            clubs: 0,
+            diamonds: 0,
+            hearts: 0,
+            spades: 0,
+        },
+        balance: 0,
+        finalScore: 0,
+    })
+
+    async function calculateScores(){
+        // await findPlayers(gameId)
+
+        const scoresByActor = {}
+        const marketMap = makeMarketMap(players)
+        console.log('marketMap: ', marketMap)
+
+        trades.map(trade => {
+            // let {market, actor, type} = trade
+            let affected = marketMap[trade.market]
+
+            if(!scoresByActor[trade.actor]){
+                console.log('created actor: ', trade.actor)
+                scoresByActor[trade.actor] = makeDefaultScoreObject()
+            }
+
+            if(!scoresByActor[affected] ){
+                console.log('created affected: ', affected)
+                scoresByActor[affected] = makeDefaultScoreObject()
+            }
+
+            console.log('adding: ', valueChanges[trade.type], ' to market value ', trade.market, ' ', scoresByActor[trade.actor].contracts[trade.market])
+
+            scoresByActor[trade.actor].contracts[trade.market] = (scoresByActor[trade.actor].contracts[trade.market] + valueChanges[trade.type]);
+            
+            // add to player balance
+            scoresByActor[trade.actor].balance += (trade.price * balanceChanges[trade.type])
+            // if(trade.type === 'sell'){
+            // }
+            // else {
+            //     scoresByActor[trade.actor].balance += (trade.price * balanceChanges[trade.type])
+            // }
+            
+            // affects the market holder
+            
+            // console.log('trade market: ', market)
+            // console.log('affected in market: ', affected, ' ', market)
+
+            scoresByActor[ affected ].contracts[trade.market] += (valueChanges[trade.type] * -1);
+            scoresByActor[affected].balance += (trade.price * balanceChanges[trade.type] * -1)
+        })
+
+        console.log('scoreByActor: ', scoresByActor)
     }
 
     async function downloadTradeData(){

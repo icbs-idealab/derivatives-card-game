@@ -21,7 +21,7 @@
                 type="submit" 
                 on:click={submit}
                 disabled={submitting || !gameId}
-            >Find Trades</button>
+            >Find Players</button>
         </div>
     </div>
 
@@ -137,7 +137,7 @@
         overflow-y: scroll;
         min-height: calc(100% - 90px - 40px);
         position: relative;
-        top: 5px;
+        top: 40px;
         padding-bottom: 40px;
         height: 100%;
     }
@@ -148,6 +148,7 @@
         left: 0;
         right: 0;
         height: 40px;
+        z-index: 5;
         background-color: white;
     }
 
