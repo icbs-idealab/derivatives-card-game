@@ -53,7 +53,7 @@
                             id="calculate-scores"
                             on:click={calculateScores}
                             disabled={calculating}
-                        > Calculate Scores </button>
+                        > Download Final Scores </button>
                     </div>
                 </div>
                 <div class="trade-list">
@@ -237,7 +237,7 @@
 
 <script lang="ts">
     import {getPlayerData, getTrades, getGame} from '$lib/actions'
-    import { getDate, getTime, makeCSV } from '$lib/helpers';
+    import { getDate, getTime, makeCSV, valueWithSymbol } from '$lib/helpers';
     import { makePlayers } from '$lib/state';
     import Loader from '../app/loader.svelte'
     let gameId: string = '' // eg 5EsiPBZ7idWG
@@ -374,11 +374,19 @@
             spades: 0,
         },
         balance: 0,
-        finalScore: 0,
+        finalBalance: 0,
     })
 
     async function calculateScores(){
         // await findPlayers(gameId)
+        calculating = true
+        await findGame(gameId)
+
+        let lastRevealed = game && game.deck ?  
+            game.deck.revealed[game.deck.revealed.length-1]: 
+            ''
+
+        console.log('last revealed: ', lastRevealed)
 
         const scoresByActor = {}
         const marketMap = makeMarketMap(players)
@@ -389,16 +397,16 @@
             let affected = marketMap[trade.market]
 
             if(!scoresByActor[trade.actor]){
-                console.log('created actor: ', trade.actor)
+                // console.log('created actor: ', trade.actor)
                 scoresByActor[trade.actor] = makeDefaultScoreObject()
             }
 
             if(!scoresByActor[affected] ){
-                console.log('created affected: ', affected)
+                // console.log('created affected: ', affected)
                 scoresByActor[affected] = makeDefaultScoreObject()
             }
 
-            console.log('adding: ', valueChanges[trade.type], ' to market value ', trade.market, ' ', scoresByActor[trade.actor].contracts[trade.market])
+            // console.log('adding: ', valueChanges[trade.type], ' to market value ', trade.market, ' ', scoresByActor[trade.actor].contracts[trade.market])
 
             scoresByActor[trade.actor].contracts[trade.market] = (scoresByActor[trade.actor].contracts[trade.market] + valueChanges[trade.type]);
             
@@ -419,7 +427,38 @@
             scoresByActor[affected].balance += (trade.price * balanceChanges[trade.type] * -1)
         })
 
+        for(let participant in scoresByActor){
+            // must be in this order to prevent NaN for final balance
+            scoresByActor[participant].finalBalance = valueWithSymbol(scoresByActor[participant].balance + (scoresByActor[participant].contracts[lastRevealed] * 100))
+            scoresByActor[participant].balance = valueWithSymbol(scoresByActor[participant].balance)
+        }
+
         console.log('scoreByActor: ', scoresByActor)
+        
+        downloadScoreData(scoresByActor)
+
+        setTimeout(() => {
+            calculating = false
+        }, 1000)
+    }
+    
+    async function downloadScoreData(scores){
+        downloading = true
+        let line1 = 'game_id,user_id,player name,clubs,diamonds,hearts,spades,balance,final balance';
+        let csv = `${line1}\n`
+
+        for(let participant in scores){
+            let p = scores[participant]
+            csv += `${gameId},${participant},${findPlayer(participant)},${p.contracts.clubs},${p.contracts.diamonds},${p.contracts.hearts},${p.contracts.spades},${p.balance},${p.finalBalance}\n`
+        }
+
+        console.log('score csv: ', csv)
+
+        makeCSV(gameId, 'final-scores', csv)
+        setTimeout(() => {
+            downloading = false
+            calculating = false
+        }, 1000)
     }
 
     async function downloadTradeData(){

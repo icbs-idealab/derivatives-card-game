@@ -274,5 +274,4 @@ export let makeCSV = (game_id: string, type: string, csvData: string) => {
     let fileName = `icbs_derivatives_${game_id}_${type}.csv`
     let blob = new Blob([csvData], {type: 'text/plain;charset=utf8'})
     saveAs(blob, fileName)
-    saveAs
 }
