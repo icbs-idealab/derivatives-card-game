@@ -119,6 +119,10 @@
         setLoadingModal(true)
         // create object representing player role assignments
         let assingments = {...localGamePlayers}
+        Logger(['Got initial assignments: ', {...assingments}])
+        Logger(['Got local lobby: ', localLobby])
+        Logger(['Got selected roles: ', selectedRoles])
+
         let assignedPlayers: string[] = []
         let pool = Array.from(localLobby)
 
@@ -131,10 +135,12 @@
             if(!currentRoleAssignment){
                 assingments[role].user_id = selectedRoles[role].user_id
                 assingments[role].player_name = selectedRoles[role].player_name
-                let indexInPool = pool.findIndex(player => player.user_id === selectedRoles[role].user_id)
-                Logger(['splicing player with role at index: ', indexInPool])
-                pool.splice(indexInPool, 1)
-                Logger(['pool after splice: ', [...pool]])
+                let indexInPool = pool.findIndex(poolPlayer => poolPlayer.user_id === selectedRoles[role].user_id)
+                if(indexInPool > -1){
+                    Logger(['splicing player with role at index: ', indexInPool, ' selected player: ', selectedRoles[role].user_id])
+                    pool.splice(indexInPool, 1)
+                    Logger(['pool after splice: ', [...pool]])
+                }
             }
         }
 
