@@ -35,7 +35,8 @@
 
     function saveNewPrices(){
         Logger(['would update value in backend'])
-        // new pricesf
+
+        // new prices
         let priceUpdate = {
             buy,
             sell,

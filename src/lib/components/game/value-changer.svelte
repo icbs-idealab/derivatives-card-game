@@ -10,6 +10,11 @@
     function onLocalChange({target}){
         updateLocalValue(target.value)
     }
+
+    function onLocalInput({target}){
+        console.log('local input: ', target.value)
+        updateLocalValue(target.value || 0)
+    }
     
     function updateLocalValue(value){
         localValue = value
@@ -19,11 +24,21 @@
     }
 
     function increment({target}){
-        updateLocalValue(localValue + 1)
+        console.log('will udpate local value with a type of: ', typeof localValue)
+        if(typeof localValue === 'string'){
+            updateLocalValue(parseInt(localValue) + 1)
+        }
+        else{
+            updateLocalValue((localValue) + 1)
+        }
         
     }
 
     function decrement({target}){
+
+        if(typeof localValue === 'string'){
+            updateLocalValue((localValue) - 1)
+        }
         updateLocalValue(localValue - 1)
     }
 </script>
@@ -35,7 +50,9 @@
             class="value-input flex" 
             type="number" 
             value={localValue} 
-            on:change={onLocalChange} />
+            on:change={onLocalChange} 
+            on:input={onLocalInput} 
+        />
         <!-- {#if localValue !== value}
         {:else}
         {/if} -->
