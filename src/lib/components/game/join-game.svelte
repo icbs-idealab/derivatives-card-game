@@ -10,12 +10,12 @@ import { get } from "svelte/store";
     
     // update player name
     export let updatePlayerName = (value: string) => {}
-    function onUpdatePlayerName({target}){
+    function onUpdatePlayerName({target}: any){
         updatePlayerName(target.value)
     }
     // update game id
     export let updateGameId = (value: string) => {}
-    function onUpdateGameId({target}){
+    function onUpdateGameId({target}: any){
         updateGameId(target.value)
     }
     // join game

@@ -1,7 +1,64 @@
+<script lang="ts">
+    import Icon from "$lib/components/icon/icon.svelte";
+	import { Logger } from "$lib/helpers";
+	import { afterUpdate } from "svelte";
+    export let select = (player: any, role: string) => {
+        // console.log('will notify parent component that we are trying to assign the selected player')
+    }
+    export let selectBot: (...props: any) => any = () => console.log('selecting bot!')
+    export let role: string = 'unknown'
+    
+    export let players: {
+        user_id: string
+        game_id: string
+        player_name: string
+    }[] = []
+
+    export let selectedPlayer = {
+        player_name: 'none',
+        game_id: '',
+        user_id: '',
+        is_bot: false
+    }
+
+    function selectLocal(player: any){
+        console.log('selecting: ', player)
+        select(player, role)
+        toggleList()
+    }
+
+    function selectLocalBot(){
+        selectBot()
+        toggleList()
+    }
+
+    let showList = false
+    const toggleList = () => showList = !showList
+
+    afterUpdate(() => {
+        Logger([
+            'players are: ',
+            players
+        ])
+    })
+</script>
+
 <div class="player-selector">
-    <div class="selected-player flex" on:click={toggleList} data-selected={selectedPlayer !== null}>
+    <div 
+        class="selected-player flex" 
+        on:click={toggleList} 
+        data-selected={selectedPlayer !== null}
+        on:keydown={() => console.log('on keydown')}
+    >
         {#if selectedPlayer}
-            <p class="selected-name">{selectedPlayer.player_name}</p>
+            <p class="selected-name" data-bot={selectedPlayer.is_bot}>
+                {#if selectedPlayer.is_bot}
+                    <Icon icon="bot" />
+                {/if}
+                <span>
+                    {selectedPlayer.player_name}
+                </span>
+            </p>
         {:else}
             <p>None</p>
         {/if}
@@ -12,11 +69,24 @@
     {#if showList}
         <div class="player-list">
             {#each players as player}
-                <div on:click={() => selectLocal(player)}>
+                <div 
+                    class="select-content" 
+                    on:click={() => selectLocal(player)} 
+                    on:keydown={() => console.log('on keydown')}
+                >
+                    <Icon icon="user" />
                     <p>{player.player_name}</p>
                 </div>
             {/each}
-            <div on:click={() => selectLocal(null)}>
+            <div 
+                class="select-content" 
+                on:click={selectLocalBot} 
+                on:keydown={() => console.log('on keydown')}
+            >
+                <Icon icon="bot" />
+                <p class="capitalise">{role} Bot</p>
+            </div>
+            <div on:click={() => selectLocal(null)} on:keydown={() => console.log('on keydown')}>
                 <p>None</p>
             </div>
         </div>
@@ -25,19 +95,6 @@
 
 <style>
 
-    /* .selected-name {
-        position: relative;
-    } */
-
-    /* .marker {
-        content: "";
-        position: absolute;
-        left: 15px;
-        border-radius: 13px;
-        height: 13px;
-        width: 13px;
-        background: var(--green);
-    } */
     [data-selected=true]{
         background-color: rgba(80, 180, 30, 0.3)!important;
     }
@@ -100,36 +157,14 @@
         right: 0;
         width: 80px;
     }
+
+    .select-content, [data-bot="true"] {
+        display: grid;
+        grid-template-columns: 25px 1fr;
+        gap: 10px;
+        align-items: center;
+        justify-content: flex-start;
+        align-content: flex-start;
+    }
 </style>
 
-<script lang="ts">
-    import Icon from "$lib/components/icon/icon.svelte";
-    export let select = (player, role) => {
-        // console.log('will notify parent component that we are trying to assign the selected player')
-    }
-    
-    export let role: string = 'unknown'
-    
-    export let players: {
-        user_id: string
-        game_id: string
-        player_name: string
-    }[] = []
-
-    let working = false
-
-    export let selectedPlayer = {
-        player_name: 'none',
-        game_id: '',
-        user_id: '',
-    }
-
-    function selectLocal(player){
-        console.log('selecting: ', player)
-        select(player, role)
-        toggleList()
-    }
-
-    let showList = false
-    const toggleList = () => showList = !showList
-</script>

@@ -2,20 +2,20 @@
     import Button from "$lib/components/button/button.svelte";
     import PasswordInput from "$lib/components/input/password-input.svelte";
     import TextInput from "$lib/components/input/text-input.svelte";
-    import type { AppErrors } from "$lib/types";
+    import type { AppErrors, AppError } from "$lib/types";
     import { appErrors } from "$lib/state";
     import { setLoadingModal, updateActiveUser } from "$lib/actions";
     import Icon from "../icon/icon.svelte";
-import { redirect } from "$lib/helpers";
+    import { redirect } from "$lib/helpers";
     export let email: string = ''
     export let password: string = ''
     export let updateEmail = (value: string) => {}
     export let updatePassword = (value: string) => {}
 
-    function onUpdateEmail({target}){ 
+    function onUpdateEmail({target}: any){ 
         updateEmail(target.value)
     }
-    function onUpdatePassword({target}){ 
+    function onUpdatePassword({target}: any){ 
         updatePassword(target.value)
     }
 
@@ -39,9 +39,9 @@ import { redirect } from "$lib/helpers";
                 const ers: AppErrors = [{
                     message: signedIn.error.message,
                     code: signedIn.error.status,
-                }]
+                } as AppError]
                 // store reference to error in app state
-                appErrors.set([ers])
+                appErrors.set(ers)
                 setLoadingModal(false)
             }
             else if(signedIn && signedIn.user){
@@ -56,31 +56,22 @@ import { redirect } from "$lib/helpers";
     function goToReset(){
         redirect('/reset-password')
     }
-
 </script>
 
 <div class="login">
-    <div class="title flex jc-start">
-        <p>Log-in</p>
-    </div>
     <TextInput value={email} onUpdate={onUpdateEmail} placeholder="Enter your email" />
     <PasswordInput value={password} onUpdate={onUpdatePassword} placeholder="Enter your password" />
+    
     <div class="button-container">
         <Button type="proceed" label="Log-in" action={submit} />
     </div>
+
     <div class="button-container">
         <Button type="reset" label="Reset Password" action={goToReset} />
-        <!-- <a class="reset-link" href="/reset-password">Reset my password</a> -->
     </div>
 </div>
 
 <style>
-    .reset-link {
-        text-decoration:underline;
-        font-size: 0.85em;
-        font-weight: 500;
-        color: rgb(50, 50, 50);
-    }
     .login {
         width: 100%;
         display: grid;
@@ -92,17 +83,5 @@ import { redirect } from "$lib/helpers";
 
     .button-container {
         margin-top: 20px;
-    }
-
-    .title {
-        font-size: 1.15em;
-        margin: 0 0 25px;
-        text-align: left;
-        width: 100%;
-    }
-
-    .title p{
-        font-size: 16pt;;
-        font-weight: bold;
     }
 </style>

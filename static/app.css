@@ -312,3 +312,9 @@ svg {
 .row-section .symbol[data-suit="diamonds"] {
     color: var(--red)!important;
 }
+
+/* helpers */
+
+.capitalise {
+    text-transform: capitalize;
+}

@@ -7,7 +7,7 @@
     import { createUser, getUserList, setLoadingModal, setShowAppMessage, showMessage } from "$lib/actions";
     import Papa from 'papaparse'
     import { onDestroy, onMount } from "svelte";
-    import { browser } from "$app/env";
+    import { browser } from "$app/environment";
 
     let list = [createNewUserInput()]
     let submitting = false

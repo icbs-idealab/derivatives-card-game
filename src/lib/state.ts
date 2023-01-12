@@ -1,8 +1,8 @@
-import { allRoleNames, defaultErrorMessage, defaultGame, defaultGamePlayer } from "./constants";
+import { allRoleNames, defaultBotParams, defaultErrorMessage, defaultGame, defaultGamePlayer, gamePhases } from "./constants";
 import { get, writable } from "svelte/store";
-import { getAndWatchGame, getAndWatchLobby, getAuthenticatedUser, watchGame } from "./actions";
+import { getAndWatchGame, getAndWatchLobby, getAuthenticatedUser, watchBotParams, watchGame } from "./actions";
 // import { makePlayers } from "./helpers";
-import type { AppErrors } from "./types";
+import type { AppErrors, AppGamePlayersByRole, LobbyRequirements, ServerSubscriptions, UnassignedLobbyPlayer } from "./types";
 import type { AppGamePlayers, SupabaseUser } from "./types";
 import { Logger } from "./helpers";
 // import { makePlayers } from "./helpers";
@@ -15,10 +15,12 @@ export const archives = writable([])
 export const appMessage = writable(defaultErrorMessage)
 export const showAppMessage = writable(false)
 export const showErrorReporter = writable(false)
-export const appErrors = writable([] as AppErrors[])
+export const appErrors = writable([] as AppErrors)
 export const noSuchGame = writable(false)
 
 // USER
+let defaultEmail = ''
+export const showSignUpSuccessMessageWithEmail = writable(defaultEmail)
 
 export const defaultUser: SupabaseUser = {
     app_metadata: {
@@ -40,7 +42,8 @@ export const defaultUser: SupabaseUser = {
     user_metadata: {},
 }
 
-let gotUser = null
+let gotUser: boolean | null = null
+let retrievedUser: any = null
 // export const currentUser = writable({...defaultUser}, () => {
 export const currentUser = writable(
     defaultUser,
@@ -54,10 +57,11 @@ function onUserSubscribe(){
     Logger(['getting authenticated user in writable store callback'])
     Logger(['already got user?: ', gotUser])
     Logger(['current user: ', get(currentUser).id])
-    if(!gotUser){
+    if(!gotUser || !retrievedUser){
         getAuthenticatedUser()
         .then((result) => {
-            gotUser = result
+            retrievedUser = result
+            gotUser = true
         })
         .catch(err => Logger(['error getting auth user: ', err]))
     }
@@ -67,12 +71,12 @@ function onUserSubscribe(){
 
 // PLAYERS
 
-export function makePlayers(): AppGamePlayers {
-    let p = {}
+export function makePlayers(): AppGamePlayersByRole {
+    let p: any = {}
     allRoleNames.forEach((role) => {
         p[role] = { ...defaultGamePlayer, role}
     })
-    return (p as AppGamePlayers)
+    return p
 }
 
 // export const defaultPlayers = makePlayers()
@@ -81,12 +85,12 @@ export function makePlayers(): AppGamePlayers {
 export const gamePlayers = writable(makePlayers())
 
 // GAME
-export const lobbyRequirements = writable({
+export const lobbyRequirements = writable<LobbyRequirements>({
     gamePlayers: null,
     lobbyPlayers: null,
 })
 
-export const lobby = writable([])
+export const lobby = writable<UnassignedLobbyPlayer[]>([])
 
 export const currentGame = writable({...defaultGame}, 
     () => {
@@ -101,7 +105,7 @@ export const currentGame = writable({...defaultGame},
     }
 )
 
-export const gameTrades = writable([])
+export const gameTrades = writable<any[]>([])
 
 export const canTrade = writable({
     clubs: true,
@@ -120,7 +124,7 @@ export const showEndGameModal = writable(false)
 
 // SUBSCRIPTIONS
 
-export const serverSubscriptions = writable({
+export const serverSubscriptions = writable<ServerSubscriptions>({
     game: null,
     // deck: null, admin only so can live under game
     players: null,
@@ -128,8 +132,11 @@ export const serverSubscriptions = writable({
     // playerReveals: null, // already watch players, only market owners can reveal their own cards, can keep in player/role record
     lobby: null,
     user: null,
-    // local subs, different from postgres subs
+    // bot
+    bot: null
 })
+
+// local subs, different from postgres subs
 
 export const localSubscriptions = writable({
     game: null,
@@ -150,3 +157,15 @@ export let reloadAfterRedirect = writable(false)
 export const gameChecked = writable(false)
 export const tradesChecked = writable(false)
 export const playersChecked = writable(false)
+
+// BOT
+
+function onBotSubscribe(){
+    Logger(['Will start watching bots'])
+    watchBotParams()
+    return () => Logger(['stopped watching bots'])
+}
+
+export const botParams = writable(defaultBotParams, onBotSubscribe)
+
+export const gamePhase = writable(gamePhases[0])

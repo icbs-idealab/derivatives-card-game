@@ -150,7 +150,7 @@
     import TextInput from "../input/text-input.svelte";
     import { Logger, redirect } from "$lib/helpers";
     import { currentUser, showPasswordUpdater } from "$lib/state";
-    import { browser } from "$app/env";
+    import { browser } from "$app/environment";
     import { page } from "$app/stores";
     let editingPassword = true
     let completed = false
@@ -200,7 +200,7 @@
         .then((result) => {
             completed = true
             Logger(['success! updated password: ', result])
-            if($page.path === '/update-password'){
+            if($page.url.pathname=== '/update-password'){
                 redirect('/')
             }
         })

@@ -20,10 +20,10 @@
     import { Logger, parseArchives, redirect } from "$lib/helpers";
     import { onMount } from "svelte";
     import { page } from "$app/stores";
-    import { browser } from "$app/env";
+    import { browser } from "$app/environment";
     import { get } from "svelte/store";
     import Icon from "../icon/icon.svelte";
-    // import { browser } from "$app/env";
+    // import { browser } $app.environment;
     const {saveAs} = fileSaver
 
     export let hasGame: boolean = false
@@ -154,7 +154,7 @@
             label: 'Leave Game',
             icon: 'leave',
             action: () => leaveGame(),
-            condition: isAuthenticated && hasGame && $page.path !== '/admin'
+            condition: isAuthenticated && hasGame && $page.url.pathname !== '/admin'
         },
         {
             label: 'View Rules',
@@ -166,7 +166,7 @@
             label: 'Download Trades',
             icon: 'download',
             action: () => download(game),
-            condition: isAuthenticated && hasGame && game.game_id && $page.path !== '/admin'
+            condition: isAuthenticated && hasGame && game.game_id && $page.url.pathname !== '/admin'
         },
         {
             label: 'Get Archives',
@@ -183,7 +183,7 @@
         // },
     ]
 
-    $:offset = $page.path === '/admin'
+    $:offset = $page.url.pathname === '/admin'
 
     let showMenuInReveal = false
 

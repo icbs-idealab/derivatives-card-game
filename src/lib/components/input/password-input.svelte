@@ -1,13 +1,26 @@
 <div class="input flex jc-between">
-    <input 
-        type="password"
-        placeholder={placeholder}
-        on:input={onUpdate}
-        value={value}
-    />
-    <div class="secure-icon">
-        <Icon icon="lock" />
-    </div>
+    {#if showPassword}
+        <input 
+            type="text"
+            placeholder={placeholder}
+            on:input={onUpdate}
+            value={value}
+        />
+    {:else}
+        <input 
+            type="password"
+            placeholder={placeholder}
+            on:input={onUpdate}
+            value={value}
+        />
+    {/if}
+    <button class="secure-icon" on:click={toggleShow}>
+        {#if showPassword}
+            <Icon icon="eyeOff" />
+        {:else}
+            <Icon icon="eye" />
+        {/if}
+    </button>
 </div>
 
 <script lang="ts">
@@ -17,6 +30,22 @@
     export let onUpdate: (e: any) => any = (e) => {
         console.log('updated value: ', e.target.value)
     }
+
+    let showPassword = false
+
+    function toggleShow(){
+        showPassword = !showPassword
+    }
 </script>
 
-<style></style>
+<style>
+    button {
+        background: transparent;
+        position: relative;
+        right: -8px
+    }
+
+    button:hover {
+        background: lightgray;
+    }
+</style>

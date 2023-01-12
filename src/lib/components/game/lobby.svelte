@@ -4,25 +4,24 @@
     // import Players from "$lib/game/players.svelte";
     // import { roleKeys } from "$lib/../constants";
     import { currentUser, gamePlayers, lobby, lobbyRequirements, currentGame } from "$lib/state";
-    // import { lobbyRequirements } from "$lib/../state/lobby";
     import SuitIcon from "$lib/components/suit/suit-icon.svelte";
     import { setLoadingModal } from "$lib/actions";
-    import { allRoleNames, roleKeys } from "$lib/constants";
+    import { allRoleNames, bots, roleKeys } from "$lib/constants";
     import { Logger, makeGamePlayers } from "$lib/helpers";
     import { get } from "svelte/store";
     import Icon from "../icon/icon.svelte";
-    import type { AppGame } from "$lib/types";
+    import type { AppGame, LobbyPlayerBasicInfo, SuitName } from "$lib/types";
+	import { afterUpdate } from "svelte";
 
     export let adminId: string = ''
     export let haveRequiredRoles: boolean = false;
-    let defaultGamePlayers = makeGamePlayers()
-    let localLobby = []
+    let localLobby: {user_id: string, game_id: string, player_name: string}[] = []
     let localGamePlayers = $gamePlayers
     let localUser = $currentUser
 
 
     // filtered list of players that should be included in the player selection list
-    let selectedRoles = {
+    let selectedRoles: {[index: string]: any} = {
         clubs: null,
         diamonds: null,
         hearts: null,
@@ -43,15 +42,28 @@
 
     let listReady = false
 
-    function selectUser(selected, role){
+    function selectUser(selected: any, role: string){
         selectedRoles[role] = selected
+        Logger(['Just selected User: ', selected])
+        Logger(['Game Users are now: ', selectedRoles])
+    }
+
+
+    function selectBot(targetRole: SuitName){
+        let bot = {...bots[targetRole]}
+        let gameId = $currentGame.game_id
+        gameId && (bot.game_id = gameId)
+        bot.game_id && (selectedRoles[targetRole] = bot)
+        
+        Logger(['Just assigned bot to roel: ', targetRole])
+        Logger(['Game players are now: ', selectedRoles])
     }
 
     const lobbySubscription = lobby.subscribe(newLobbyData => {
         Logger(['got new lobby data: ', newLobbyData])
         if(newLobbyData && typeof newLobbyData.map === 'function'){
-            let ids = []
-            let users = []
+            let ids: any[] = []
+            let users: any[] = []
             newLobbyData.map(player => {
                 if( ids.indexOf(player.user_id) === -1 ){
                     ids.push(player.user_id)
@@ -98,9 +110,6 @@
     gamePlayers.subscribe(newGamePlayers => {
         Logger(['got new game players in <Lobby /> ', newGamePlayers])
         
-        // let adminId = get(currentGame).admin.user_id
-        let adminId = ''
-
         for(let gamePlayer in newGamePlayers){
             if(newGamePlayers[gamePlayer].is_admin){
                 adminRole = {
@@ -132,6 +141,7 @@
             
             console.log('$debug: ', currentRoleAssignment)
 
+            // for admin player currentRoleAssignment has a value
             if(!currentRoleAssignment){
                 assingments[role].user_id = selectedRoles[role].user_id
                 assingments[role].player_name = selectedRoles[role].player_name
@@ -156,37 +166,15 @@
             }
         })
 
-        // for(let i = 0; i<6; i++){
-        //     // speculators cannot have assignments. no need to check for matching role
-        //     if(pool.length){
-        //         Logger(['setting speculator: ', i])
-        //         Logger(['pool player: ', pool[0]])
-        //         let role = `speculator${i + 1}`
-        //         assingments[role].user_id = pool[0].user_id
-        //         assingments[role].player_name = pool[0].player_name
-        //         pool.splice(0, 1)
-        //         // if(pool.length){
-        //         //     // i = 6
-        //         //     break
-        //         // }
-        //     }
-        //     else{
-        //         Logger(['no players left in pool: ', [...pool]])
-        //         // remove unassigned speculators
-        //         let role = `speculator${i + 1}`
-        //         delete assingments[role]
-        //     }
-        // }
-
         let assignmentArray = []
         for(let role in assingments){
-            assignmentArray.push(assingments[role])
+            assingments[role].user_id && assignmentArray.push(assingments[role])
         }
 
         Logger(['$debug assignments: ', assingments])
         Logger(['$debug pool: ', pool])
 
-        assignGamePlayers(localUser.user_metadata.game_id, assignmentArray)
+        assignGamePlayers(localUser.user_metadata.game_id, assignmentArray as any)
         .catch(err => {
             Logger(['$debug error assigning players: ', err])
         })
@@ -194,6 +182,17 @@
             setLoadingModal(false)
         })
     }
+
+    afterUpdate(() => {
+        Logger([
+            'filtered players are: ',
+            filtered
+        ])
+        Logger([
+            'unfiltered lobby is: ',
+            localLobby
+        ])
+    })
 </script>
 
 <div class="lobby flex fd-col">
@@ -250,6 +249,7 @@
                             select={selectUser}
                             selectedPlayer={selectedRoles[role]}
                             role={role}
+                            selectBot={() => selectBot(role)}
                         />
                     {:else if adminRole.role === role && listReady}
                         <div class="current-player flex is-admin">

@@ -1,11 +1,32 @@
 import { supabase } from "$lib/backend"
 import { get } from "svelte/store"
-import { allRoleNames, defaultGame, defaultUser, playerRevealRounds } from "./constants"
-import { buildShuffledDeck, Logger, makeGamePlayers, redirect } from "./helpers"
+import { allRoleNames, defaultBotTradeData, defaultGame, defaultUser, getDefaultBotTrade, playerRevealRounds, roleKeys } from "./constants"
+import { buildShuffledDeck, calculateMostRevealed, extractGamePhase, findGamePlayerById, getRandomNumberFromRange, Logger, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked, showAppMessage, playersChecked, gameChecked, tradesChecked } from "./state"
-import type { AppGamePlayers, MessageParams, NewGameProps, SupabaseUser } from "./types"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked, showAppMessage, playersChecked, gameChecked, tradesChecked, botParams, gamePhase, appErrors } from "./state"
+import type { AppGame, 
+    AppGamePlayer, 
+    AppGamePlayers, 
+    AppGamePlayersByRole, 
+    AppGameRole, 
+    BotRateAdjustments, 
+    BotTradeData, 
+    FinalScore, 
+    GamePhase, 
+    LobbyPlayerBasicInfo, 
+    MessageParams, 
+    NewGameProps, 
+    PlayerRole, 
+    SuitName, 
+    SupabaseUser, 
+    CardHand, 
+    BotRates,
+    RateChangeLog,
+    AppErrors,
+    AppError
+} from "./types"
 import {nanoid} from 'nanoid'
+import type { UserResponse } from "@supabase/supabase-js"
 
 // USER
 
@@ -17,12 +38,12 @@ export const updateActiveUser = (newUserDetails: SupabaseUser) => {
 export const createUser = async (email: string) => {
     let password = 'test123'
     Logger(['creating with faux password = ', password])
-    let { user, error } = await supabase.auth.signUp({
+    let { data, error } = await supabase.auth.signUp({
         email,
         password
     })
 
-    return { user, error }
+    return { user: data.user, error }
 }
 
 export const resetUser = () => currentUser.update(() => ({...defaultUser}))
@@ -35,7 +56,9 @@ export const resetUser = () => currentUser.update(() => ({...defaultUser}))
 
 export const getAuthenticatedUser = async () => {
     // Logger(['getting authenticated user(): '])
-    let user: SupabaseUser | null = await supabase.auth.user()
+    // let user: SupabaseUser | null = await supabase.auth.getUser()
+    let _user: UserResponse | null = await supabase.auth.getUser()
+    let user = _user?.data.user
     let current = get(currentUser)
     let subs = get(serverSubscriptions)
         
@@ -65,7 +88,7 @@ export const getAuthenticatedUser = async () => {
     return user
 }
 
-export const checkIfPasswordChanged = async (user) => {
+export const checkIfPasswordChanged = async (user: any) => {
     return await supabase
         .from('password-changed')
         .select("*")
@@ -78,20 +101,23 @@ export const checkUserCache = async () => {
 }
 
 export const updatePassword = async (password: string) => {
-    let returnObject = {
+    let returnObject: {
+        user: null | UserResponse
+        supabase: any
+    } = {
         user: null,
         supabase: null,
     }
 
-    returnObject.user  = await supabase.auth.update({password})
+    returnObject.user  = await supabase.auth.updateUser({password})
 
-    if(returnObject.user.data){
+    if(returnObject.user.data && returnObject.user.data.user){
         returnObject.supabase = await supabase
             .from('password-changed')
-            .insert([{id: returnObject.user.data.id}])
+            .insert([{id: returnObject.user.data.user.id}])
             .select("*")
 
-        currentUser.set(returnObject.user)
+        currentUser.set(returnObject.user.data.user)
     }    
 
     return returnObject
@@ -99,36 +125,61 @@ export const updatePassword = async (password: string) => {
 
 export const updateUserMetadata = async (values: UserMetaDataValues) => {
     Logger(['updating user meta data: ', values])
-    const {data, error} = await supabase.auth.update({
+    const {data, error} = await supabase.auth.updateUser({
         data: values
     })
 
     if(error){
         Logger(['error updating user metadata: ', error])
     }
-    else if(data){
-        currentUser.set(data)
+    else if(data && data.user){
+        currentUser.set(data.user)
     }
     return data
 }
 
 export const requestAccess = async (email: string, message: string) => {
-    let { body, error } = await supabase.from('requests')
+    let { data, error } = await supabase.from('requests')
     .insert([{
         email,
         message,
     }])
 
-    return {body, error}
+    return {body: data, error}
+}
+
+export const signUp = async (email: string, password: string) => {
+    let { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+    })
+
+    if(!error){
+        Logger(['result of signup: ', data])
+    }
+    else {
+        let errorConfig: AppError = {
+            code: (error as any).status || 442,
+            message: error.message
+        }
+        let errors: AppErrors = []
+        errors.push(errorConfig)
+
+        appErrors.set(errors)
+        showErrorReporter.set(true)
+    }
+
+
+    return {data, error}
 }
 
 export const signIn = async (email: string, password: string) => {
-    let { user, error } = await supabase.auth.signIn({
+    let { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
     })
 
-    return {user, error}
+    return {user: data.user, error}
 }
 
 export const singOut = async () => {
@@ -139,7 +190,7 @@ export const singOut = async () => {
     return { error, success: !error }
 }
 
-export const checkIfAdmin = async (user) => {
+export const checkIfAdmin = async (user: any) => {
     return await supabase
         .from('admins')
         .select("*")
@@ -155,29 +206,352 @@ export const getUserList = async () => {
 
 // PLAYER
 
-export const updatePlayer = async (newData, game_id, user_id) => {
+export const updatePlayer = async (newData: any, game_id: string, user_id: string) => {
     return await supabase.from('game-players')
         .update(newData)
-        .select('*')
         .eq('game_id', game_id)
         .eq('user_id', user_id)
+        .select('*')
 }
 
-export const revealPlayerCard = async (newPlayerData, game_id, user_id) => {
+export const revealPlayerCard = async (newPlayerData: any, game_id: string, user_id: string) => {
     const {data, error} = await updatePlayer(newPlayerData, game_id, user_id)
     data !== null && Logger(['result of player update: ', data])
     error !== null && Logger(['error updating player: ', data])
     return {data, error, success: !error}
 }
 
-export const updatePlayerPrices = async (newPrices) => {
+export const updatePlayerPrices = async (newPrices: {buy: number, sell: number}) => {
     let game_id = get(currentGame).game_id
     let user_id = get(currentUser).id
+    // get players and filter by id
+    let players = get(gamePlayers)
+    let thisPlayer = findGamePlayerById()
+    let currentChangeLog = thisPlayer.rate_change_log
 
-    const {data, error} = await updatePlayer(newPrices, game_id, user_id)
+    let newLog: RateChangeLog = {
+        ...newPrices,
+        time: Date.now()
+    }
+
+    currentChangeLog.push(newLog)
+
+    let newPlayerData = {
+        rate_change_log: newLog,
+        ...newPrices
+    } 
+    
+    // const {data, error} = await updatePlayer(newPrices, game_id, user_id)
+    const {data, error} = await updatePlayer(newPlayerData, game_id, user_id)
     data !== null && Logger(['result of player price update: ', data])
     error !== null && Logger(['error updating player prices: ', error])
     return {data, error, success: !error}
+}
+
+export const updateBotsInCloud = async (gameId: string, bots: AppGamePlayersByRole) => {
+    let calls = []
+
+    for(let bot in bots){
+        let b = bots[bot]
+        let call = new Promise(async (resolve, reject) => {
+            const {data, error} = await supabase
+                .from('game-players')
+                .update([b])
+                .eq('game_id', gameId)
+                .eq('user_id', b.user_id)
+                .select("*")
+
+            !error && resolve(data)
+            error && reject(error)
+        })
+        calls.push(call)
+    }
+
+    return Promise.all(calls)
+        .then(res => {
+            Logger(['completed bot update calls: ', res])
+            return {success: true, result: res, error: null}
+        })
+        .catch(err => {
+            Logger(['error completing bot update calls: ', err])
+            return {success: false, result: null, error: err}
+        })
+
+}
+
+export const getBotParams = async () => {
+    const {data, error} = await supabase.from('bot-logic')
+        .select('*')
+        .single()
+
+    !error && Logger(['result of getting bot params: ', data])
+    error && Logger(['error getting bot params: ', error])
+
+    return {data, error}
+}
+
+export const watchBotParams = async () => {
+    let subs = get(serverSubscriptions)
+
+    function handleBotParamsChange(payload: any){
+        Logger(['Got new bot params: ', payload.new])
+
+        let parsed = {}
+        if(typeof payload.new === 'string'){
+            parsed = JSON.parse(payload.new)
+        }
+
+        JSON.stringify(get(botParams)) !== JSON.stringify(parsed)
+            && botParams.set(payload.new)
+    }
+
+    if(!subs.bot){
+        const botParamsWatcher = await supabase
+            .channel(`public:bot-logic`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'bot-logic',
+            }, handleBotParamsChange)
+            .subscribe()
+    
+            serverSubscriptions.update(original => {
+                return {
+                    ...original,
+                    bot: botParamsWatcher
+                }
+            })
+    }
+}
+
+export function createBotTradePromise(bot: AppGamePlayer, game: AppGame, tradeData: BotTradeData){
+    // price depends on market being interacted with
+    let trade = {
+        market: tradeData.market,
+        type: tradeData.type,
+        price: tradeData.price,
+        actor: bot.user_id,
+        game_id: bot.game_id,
+        round: game.round,
+    }
+
+    return new Promise( async (resolve, reject) => {
+        const {data, error} = await supabase.from('game-trades')
+        .insert(trade)
+        .eq('game_id', bot.game_id)
+        .eq('user_id', bot.user_id)
+        .select("*")
+
+        !error && resolve(data)
+        error && reject(error)
+    })
+}
+
+function getAllLeastRevealed(ordered: SuitName[], revealCount: CardHand){
+    let least = ordered[ordered.length - 1]
+    let targets: SuitName[] = []
+    
+    function append(target: SuitName){
+        targets.push(target)
+    }
+
+    [...ordered].reverse().forEach((target) => {
+        revealCount[target] === revealCount[least] && append(target)
+    })
+
+    Logger(['Can target suits: ', targets])
+    
+    return targets
+}
+
+function calculateBestTrade(orderedSuits: SuitName[], cardCount: CardHand , players: AppGamePlayers, currentBotRole: PlayerRole){
+    // when to buy
+    // buy any of the markets that has the fewest cards revealed
+    // let leastRevealed = orderedSuits[orderedSuits.length - 1].toLowerCase()
+    let leastRevealedCards = getAllLeastRevealed(orderedSuits, cardCount)
+    let mostRevealed = orderedSuits[0].toLowerCase()
+    let botRole = currentBotRole.toLowerCase()
+    Logger(['BOT-TRADE LEAST REVEALED CARDS: ', leastRevealedCards])
+    Logger(['BOT-TRADE MOST REVEALED: ', mostRevealed])
+    Logger(['BOT-TRADE BOT ROLE: ', botRole])
+
+    if(leastRevealedCards.includes(botRole as SuitName)){
+        // sell other markets instead, most revealed suit
+        let targetMarkets = roleKeys.filter(role => role !== botRole)
+        let randomIndex = getRandomNumberFromRange({max: targetMarkets.length, min: 0})
+        let selectedMarket = targetMarkets[randomIndex]
+        Logger(['Selected Market: ', selectedMarket])
+        // get data for selected market
+        let targetPlayerIndex = players.findIndex((player: AppGamePlayer) => player.role === selectedMarket)
+        Logger(['TARGET PLAYER INDEX: ', targetPlayerIndex])
+
+        let selectedPlayer = players[targetPlayerIndex]
+        Logger(['SELECTED PLAYER: ', selectedPlayer])
+
+        if(selectedPlayer){
+            let botTradeData = {
+                market: selectedMarket,
+                type: 'sell',
+                price: selectedPlayer.sell
+            }
+            return botTradeData
+        }
+    }
+    else if(mostRevealed === botRole){
+        // do nothing
+    }
+    else {
+        // buy target market
+        let rand = getRandomNumberFromRange({max: leastRevealedCards.length, min: 0})
+        Logger(['Rand: ', rand])
+        let randomFromLeastRevealed = leastRevealedCards[rand-1]
+        Logger(['randomFromLeastRevealed: ', randomFromLeastRevealed])
+        let targetPlayerIndex = players.findIndex((player: AppGamePlayer) => player.role === randomFromLeastRevealed)
+        let targetPlayer = players[targetPlayerIndex]
+        if(targetPlayer){
+            let botTradeData = {
+                market: randomFromLeastRevealed as SuitName,
+                type: 'buy',
+                price: targetPlayer.buy
+            }
+            return botTradeData
+        }
+    }
+}
+
+let rateAdjustments: BotRateAdjustments = {
+    'early': {
+        0: -1,
+        1: -1,
+        2: 1,
+        3: 1,
+    },
+    'mid': {
+        0: -2,
+        1: -2,
+        2: 2,
+        3: 2,
+    },
+    'late': {
+        0: -3,
+        1: -2,
+        2: 2,
+        3: 3,
+    },
+    'end': {
+        0: -4,
+        1: -3,
+        2: 3,
+        3: 4,
+    },
+}
+
+function adjustBotRates(rates: BotRates, index: number, gamePhase: GamePhase){
+    // may later alter logic for adjusting rates so keep as a separate function
+    Logger([`Adjusting for game phase: ${gamePhase} with index: ${index} -> ${rateAdjustments[gamePhase][index]}`])
+    let params = get(botParams)
+
+    rates.buy += rateAdjustments[gamePhase][index]
+    rates.sell += rateAdjustments[gamePhase][index]
+
+    // force rates to sit within parameters
+    rates.buy < params.min_buy_rate && (rates.buy = params.min_buy_rate)
+    rates.buy > params.max_buy_rate && (rates.buy = params.max_buy_rate)
+    rates.sell < params.min_sell_rate && (rates.sell = params.min_sell_rate)
+    rates.sell > params.max_sell_rate && (rates.sell = params.max_sell_rate)
+    return rates
+}
+
+function calculateBestRate(orderedSuits: SuitName[], botRates: {buy: number, sell: number}, botSuit: SuitName, gamePhase: GamePhase)
+:{buy: number, sell: number} {
+    // look at most revealed cards
+    let newRates: BotRates = {...botRates}
+    // increase bid/sell rate if own suit unlikely to be last or unlikely to be targeted by other players (is last or second last in terms of frequency)
+    // otherwise increase ask rate
+    let index = orderedSuits.indexOf(botSuit)
+    newRates = adjustBotRates(newRates, index, gamePhase)
+    // generally increase both simultaneously
+    return newRates
+}
+
+export async function performBotActions(bots: AppGamePlayersByRole){
+    let promises = []
+    let tradePromises = []
+    let {data: game} = await getGame( get(currentGame).game_id )
+    let {data: suitPlayers} = await getPlayerData( get(currentGame).game_id )
+    let gamePhase = extractGamePhase(game)
+    // calculate which suits have the highest number of reveals and return ordered array of suit names
+    let {orderedSuits, cardCount} = await calculateMostRevealed(game) // return array in order of most revealed or null
+
+    Logger(['Suits in order are: ', orderedSuits])
+    for(let bot in bots){
+        let botId = bots[bot].user_id
+        let gameId = game.game_id
+        let actionCount = bots[bot].bot_action_count as any
+        // var by ref so don't need to pass back into original object
+        actionCount[game.round] += 1
+        
+        // calculate the ideal rates to set for the target bot
+        let calculatedRates = calculateBestRate(
+            orderedSuits, 
+            {buy: bots[bot].buy, sell: bots[bot].sell},
+            bots[bot].role as SuitName,
+            gamePhase
+        )
+
+        Logger(['calculated best rates: ', calculatedRates])
+
+        let newRatesLog = bots[bot].rate_change_log || []
+        newRatesLog.push({buy: calculatedRates.buy, sell: calculatedRates.sell, time: Date.now()})
+
+        Logger(['New Rates Log: ', newRatesLog])
+
+        let updatedBot: AppGamePlayer = {
+            ...bots[bot],
+            buy: calculatedRates.buy,
+            sell: calculatedRates.sell,
+            bot_action_count: actionCount,
+            rate_change_log: newRatesLog
+        }
+
+        Logger(['Update Bot is: ', updatedBot])
+
+        // calc best trade option for the target bot
+        let bestTrade = calculateBestTrade(orderedSuits, cardCount, suitPlayers, bots[bot].role as PlayerRole)
+        if(bestTrade !== undefined){
+            let trade: BotTradeData = bestTrade
+            let tradeCall = createBotTradePromise(bots[bot] as AppGamePlayer, game, trade)
+            Logger(['Pushing trade call! ', tradeCall])
+            tradePromises.push(tradeCall)
+        }
+        else {
+            Logger(['No Trade Created!!'])
+        }
+
+        // update bots player object
+        // including any new pricing for bot-owned markets
+        // tbd by a calculation of suit that is most likely to be revealed last
+        let rateUpdateCall = new Promise( async (resolve, reject) => {
+            const {data, error} = await supabase.from('game-players')
+            .update(updatedBot)
+            .eq('game_id', gameId)
+            .eq('user_id', botId)
+            .select("*")
+
+            !error && resolve(data)
+            error && reject(error)
+        })
+
+        Logger(['Pushing rate update call! ', rateUpdateCall])
+        promises.push(rateUpdateCall)
+    }
+    let allPromises = [...promises, ...tradePromises]
+
+    // return Promise.all(promises.concat(tradePromises))
+    // return Promise.all(tradePromises)
+    return Promise.all(allPromises)
+    .then(res => ({success: true, data: res, error: null}))
+    .catch(err => ({success: false, data: null, error: err}))
 }
 
 export const getPlayerData = async (game_id: string) => {
@@ -188,21 +562,30 @@ export const getPlayerData = async (game_id: string) => {
 
     Logger(['player data: ', data])
     playersChecked.set(true)
-    return {data, error, success: !error}
+    let returnData: AppGamePlayers = data || []
+    return {data: returnData, error, success: !error}
 }
 
 export const watchPlayers = async (game_id: string) => {
     Logger(['attempting to watch players... ', game_id])
-    if(game_id){
-        const players = await supabase
-            .from(`game-players:game_id=eq.${game_id}`)
+
+    function handleRecordUpdated(payload: any){
+        Logger(['got game-players update: ', payload])
+        syncGamePlayers(payload.new)
+    }
+
+    let subs = get(serverSubscriptions)
+
+    if(game_id && !subs.players){
+        const players: any = await supabase
+            .channel(`public:game-players:game_id=eq.${game_id}`)
             // .select('game_id,admin,round,started,ended,completed,maximum_spread')
-            .on('UPDATE', (payload) => {
-                // update game object in app state
-                Logger(['got game-players update: ', payload])
-                // updateGamePlayers({players: payload.new})
-                syncGamePlayers(payload.new)
-            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'game-players',
+                filter: `game_id=eq.${game_id}`
+            }, handleRecordUpdated)
             .subscribe()
 
         // set player watcher 
@@ -218,6 +601,9 @@ export const getAndWatchPlayers = async (game_id: string) => {
         let players = await getPlayerData(game_id)
         
         if(players.data && typeof Array.isArray(players.data)) {
+            
+            Logger(['PLAYERS ARE: ', players])
+
             syncGamePlayers(players.data)
             lobbyRequirements.update(original => {
                 return {
@@ -232,20 +618,22 @@ export const getAndWatchPlayers = async (game_id: string) => {
     }
 }
 
-export function syncGamePlayers(update){
+export function syncGamePlayers(update: AppGamePlayers | AppGamePlayer){
     Logger(['syncing players with update value: ', update])
     gamePlayers.update(currentPlayers => {
         // players.data
         // players.data
         Logger(['current players: ', currentPlayers])
 
-        let newPlayers = {...currentPlayers}
+        let newPlayers: AppGamePlayersByRole = {...currentPlayers}
+        // let newPlayers: AppGamePlayers = [...currentPlayers]
         
         if(Array.isArray(update)){
 
-            update.map(player => {
-                newPlayers[player.role] = {
-                    ...newPlayers[player.role],
+            update.map((player: AppGamePlayer) => {
+                let role: PlayerRole = player.role
+                newPlayers[role] = {
+                    ...newPlayers[role],
                     ...player
                 }
             })
@@ -265,7 +653,7 @@ export function syncGamePlayers(update){
     })
 }
 
-const getPlayersFromLobby = async (game_id) => {
+const getPlayersFromLobby = async (game_id: string) => {
     const {data, error} = await supabase.from('game-lobby')
         .select('*')
         .eq('game_id', game_id)
@@ -274,15 +662,20 @@ const getPlayersFromLobby = async (game_id) => {
 }
 
 const watchLobby = async (game_id: string) => {
-    const subscription = await supabase.from(`game-lobby:game_id=eq.${game_id}`)
-        .on('INSERT', (payload) => {
-            Logger(['got new lobby payload: ', payload])
-            syncLobby(payload.new)
-        })
-        .on('DELETE', (payload) => {
-            Logger(['got new lobby deletion payload: ', payload])
-            syncLobby(payload.new, true)
-        })
+    const subscription = await supabase
+        .channel(`public:game-lobby:game_id=eq.${game_id}`)
+        .on(
+            'postgres_changes', 
+            {event: '*', schema: 'public', table: 'game-lobby', filter: `id=eq.${game_id}`}, 
+            (payload) => {
+                Logger(['got new lobby payload: ', payload])
+                syncLobby(payload.new)
+            }
+        )
+        // .on('DELETE', (payload) => {
+        //     Logger(['got new lobby deletion payload: ', payload])
+        //     syncLobby(payload.new, true)
+        // })
         .subscribe()
 
     Logger(['watchLobby() -> subscribed to lobby: ', subscription])
@@ -308,7 +701,7 @@ export const getAndWatchLobby = async (game_id: string) => {
     }
 }
 
-export function syncLobby(update, remove: boolean = false){
+export function syncLobby(update: any, remove: boolean = false){
     lobby.update(currentLobbyPlayers => {
         // players.data
         Logger(['syncing... current lobby players: ', currentLobbyPlayers])
@@ -336,7 +729,7 @@ export function syncLobby(update, remove: boolean = false){
     })
 }
 
-async function insertPlayer(game_id, player){
+async function insertPlayer(game_id: string, player: LobbyPlayerBasicInfo){
     const {data, error} = await supabase
         .from(`game-lobby`)
         .insert([
@@ -350,11 +743,11 @@ async function insertPlayer(game_id, player){
     return {data, error, success: !error}
 }
 
-function checkGameForAvailableRoles(playerData){
+function checkGameForAvailableRoles(playerData: any){
     Logger(['checking against: ', playerData])
         let count = 0
         // let ps = Object.keys(playerData)
-        playerData.map(player => {
+        playerData.map((player: any) => {
             player.user_id === "" && (count += 1)
         })
 
@@ -362,7 +755,7 @@ function checkGameForAvailableRoles(playerData){
         return count !== allRoleNames.length
 }
 
-export async function joinLobby(game_id, player){
+export async function joinLobby(game_id: string, player: LobbyPlayerBasicInfo){
 
     // first check if such a game exists
 
@@ -416,7 +809,7 @@ export async function joinLobby(game_id, player){
 
 // GAME
 
-export const getArchives = async (user_id, game_id = '') => {
+export const getArchives = async (user_id: string, game_id: string = '') => {
     if(!game_id && user_id){
         return await supabase.from('archives')
         .select()
@@ -489,17 +882,18 @@ export const createNewGame = async ({user, creatorRole, maximumSpread, playerNam
             Logger(['errors in making game: ', error])
             
             let type = "game"
-                let res = data && data.length && data.length > 1 ?
-                    data[0]
-                    : data
-    
+            // let res = data && data.length && data.length > 1 ?
+            //     data[0]
+            //     : data
+            let res = data
+
             !error ?
                 resolve({data: res, error: null, success: true, type})
                 : reject({error, data: null, success: false, type})
         })
     
         const updateCreatorRecord = new Promise( async (resolve, reject) => {
-            const {data, error} = await supabase.auth.update({
+            const {data, error} = await supabase.auth.updateUser({
                 data: {
                     game_id,
                     admin: true,
@@ -569,25 +963,19 @@ const viewCreatedGame = async (creationResults: any[]) => {
     }
 }
 
-export const assignGamePlayers = async (game_id, roleAssignments) => {
+export const assignGamePlayers = async (game_id: string, roleAssignments: AppGamePlayer[]) => {
     // assign player roles
     return Promise.all(
-        roleAssignments.map(async (player) => {
-            // try {
-                // results[player.role] = await supabase
-                return await supabase
-                    .from('game-players')
-                    .update({
-                        player_name: player.player_name,
-                        user_id: player.user_id,
-                    })
-                    .select("*")
-                    .eq('game_id', game_id)
-                    .eq('role', player.role)
-            // }
-            // catch(err){
-            //     Logger([`error assigning player ${player.role}: `, err])
-            // }
+        roleAssignments.map(async (player: AppGamePlayer) => {
+            return await supabase
+                .from('game-players')
+                .update({
+                    player_name: player.player_name,
+                    user_id: player.user_id,
+                })
+                .eq('game_id', game_id)
+                .eq('role', player.role)
+                .select("*")
         })
     )
     .then(res => {
@@ -599,9 +987,11 @@ export const assignGamePlayers = async (game_id, roleAssignments) => {
     })
 }
 
-export async function updateGame(updateValue){
+export async function updateGame(updateValue: Partial<AppGame>){
     let game = get(currentGame)
     let {game_id} = game
+    let res: any = {}
+
     if(game_id){
         // let record = await supabase.from('game')
         // .select('*')
@@ -614,17 +1004,25 @@ export async function updateGame(updateValue){
 
         if(!error){
             Logger(['successfully updated game: ', data])
-            return {data, success: true}
+            res.data = data
+            res.success = true
+            res.error = null
+            return res
+            // return {data, success: true}
         }
         else{
             Logger(['error starting game: ', error])
-            return {error, success: false}
+            res.error = error
+            res.success = false
+            res.data = null
+            return res
+            // return {error, success: false}
         }
 
     }
 }
 
-export const removeFromLobby = async (game_id) => {
+export const removeFromLobby = async (game_id: string) => {
     const {data, error} = await supabase
         .from('game-lobby')
         .delete()
@@ -637,7 +1035,7 @@ export const removeFromLobby = async (game_id) => {
         return {data, error, success: !error}
 }
 
-export const setFinalGameScores = async (final_scores) => {
+export const setFinalGameScores = async (final_scores: FinalScore) => {
     // let game = get(currentGame)
     let updateResult = await updateGame({final_scores, ended: true, completed: true})
     return updateResult
@@ -646,7 +1044,9 @@ export const setFinalGameScores = async (final_scores) => {
 export const startGame = async () => {
     let game = get(currentGame)
     let updateResult = await updateGame({started: true, round: 1})
-    let lobbyDeletion = await removeFromLobby(game.id)
+    if(game.id){
+        await removeFromLobby(game.id)
+    }
     return updateResult
 }
 
@@ -664,7 +1064,7 @@ export const deleteTrades = async (game_id: string) => {
         .eq("game_id", game_id)
 }
 
-export async function archiveGame(archiveData){
+export async function archiveGame(archiveData: any){
     const {data, error} = await supabase
         .from('archives')
         .insert(archiveData)
@@ -687,7 +1087,7 @@ export const endGame = async () => {
         let playerData = await getPlayerData(game.game_id)
         let {data: tradeData} = await getTrades(game.game_id)
     
-        let participants = []
+        let participants: any = []
 
         playerData.data && playerData.data.forEach(p => {
             if(p.user_id){
@@ -730,12 +1130,12 @@ export const removeGameFromUserRecord = async () => {
 
 export const nextRound = async (ignoreIncrement?: boolean) => {
     let {game_id} = get(currentGame)
-    let {data: uptoDateValues} = await getGame(game_id)
+    let {data: upToDateValues} = await getGame(game_id)
     
-    let {round, deck} = uptoDateValues
+    let {round, deck} = upToDateValues
     
     if(round && deck){
-        Logger(['ignoring increment'])
+        ignoreIncrement && Logger(['ignoring increment'])
         let next = round + (ignoreIncrement ? 0 : 1)
         Logger(['$$ next round: ', next])
         Logger(['$$ is next round a player reveal? ', playerRevealRounds[next]])
@@ -755,11 +1155,13 @@ export const nextRound = async (ignoreIncrement?: boolean) => {
         return updateResult
     }
     else{
-        Logger(['error updating game round with remote data: ', ])
+        let errorMessage = 'error updating game round with remote data: '
+        Logger([errorMessage])
+        return {data: null, error: errorMessage}
     }
 }
 
-export async function getGame(game_id){
+export async function getGame(game_id: string){
     Logger(['getting game id: ', game_id])
     let {data, error} = await supabase.from('games')
         .select('*')
@@ -789,7 +1191,7 @@ export async function getGame(game_id){
     return {data, error}
 }
 
-export async function downloadGameData(game_id){
+export async function downloadGameData(game_id: string){
     // let gData = await getGame(game_id)
     let gTrades = await getTrades(game_id)
     let gPlayers = await getPlayerData(game_id)
@@ -801,28 +1203,36 @@ export async function downloadGameData(game_id){
     }
 }
 
-export async function watchGame(game_id){
+export async function watchGame(game_id: string){
     Logger(['attempting to watch game...', game_id])
     let subs = get(serverSubscriptions)
     if(game_id && !subs.game){
         Logger(['subscribing to game'])
-        const game = await supabase
-            .from(`games:game_id=eq.${game_id}`)
-            // .from(`games`)
-            // .select('game_id,admin,round,started,ended,completed,maximum_spread')
-            .on('*', (payload) => {
+        let game: any
+        const gameRealtime = await supabase
+            .channel(`public:games:game_id=eq.${game_id}`)
+            .on('postgres_changes', {
+                event: '*', 
+                schema: 'public', 
+                table: 'games', 
+                filter: `game_id=eq.${game_id}`, 
+            }, 
+            (payload) => {
                 // update game object in app state
-                Logger(['got game update: ', payload])
+                Logger(['got game update from sub: ', payload])
                 currentGame.set(parseGameData(payload.new))
+                let newGame = payload.new as AppGame
+                let newPhase = extractGamePhase(newGame)
+                gamePhase.set( newPhase )
             })
             .subscribe()
         
-        serverSubscriptions.update(original => ({...original, game}))
-        Logger(['game subscription: ', game])
+        serverSubscriptions.update(original => ({...original, game: gameRealtime}))
+        Logger(['game subscription: ', gameRealtime])
     }
 }
 
-export async function getAndWatchGame(game_id){
+export async function getAndWatchGame(game_id: string){
     Logger(['getting and watching game: ', game_id])
     let {data: game, error} = await getGame(game_id)
     let subs = get(serverSubscriptions)
@@ -837,7 +1247,7 @@ export async function getAndWatchGame(game_id){
     return game
 }
 
-function parseGameData(data){
+function parseGameData(data: any){
     Logger(['parsing game data: ', data])
     return {
         ...data,
@@ -847,28 +1257,25 @@ function parseGameData(data){
 
 export async function leaveGame(){
     setLoadingModal(true)
+    let id
+    const {data: {user}} = await supabase.auth.getUser()
+    if(user){
+        await supabase.auth.updateUser({
+            data: {
+                game_id: '',
+                player_id: '',
+                role: '',
+            }
+        })
+        id = user.id
+        Logger(['deleting lobby record for user with ID: ', id])
+        await supabase
+            .from(`game-lobby`)
+            .delete()
+            .eq('user_id', id)
     
-    const loggedIn = await supabase.auth
-    if(loggedIn && loggedIn.update)
-    await loggedIn.update({
-        data: {
-            game_id: '',
-            player_id: '',
-            role: '',
-        }
-    })
-
-    let id = loggedIn.user().id
-
-    Logger(['deleting lobby record for user with ID: ', id])
-
-    await supabase
-        .from(`game-lobby`)
-        .delete()
-        .eq('user_id', id)
-
-
-    setLoadingModal(false)
+        setLoadingModal(false)
+    }
 
     setTimeout(() => {
         redirect("/")
@@ -879,14 +1286,14 @@ export async function leaveGame(){
     }, 1500)
 }
 
-const publishTrade = async (trade) => {
+const publishTrade = async (trade: any) => {
     return await supabase
         .from('game-trades')
         .insert(trade)
         .select('*')
 }
 
-export async function processTrade({market, type, value}){
+export async function processTrade({market, type, value}: any){
     canTrade.update(current => {
         return {
             ...current,
@@ -949,7 +1356,7 @@ export async function getTrades(game_id: string){
     return {data, error}
 }
 
-function insertTrade(tradeData){
+function insertTrade(tradeData: any){
     Logger(['inserting trade: ', tradeData])
     gameTrades.update(currentTrades => {
         let newTrades = [tradeData].concat(currentTrades)
@@ -964,13 +1371,28 @@ function insertTrade(tradeData){
 
 export async function watchTrades(game_id: string){
     const subscription = await supabase
-        .from(`game-trades:game_id=eq.${game_id}`)
-        .on("INSERT", (payload) => {
-            Logger(['saw trade: ', payload.new])
-            if(payload.new.game_id === game_id){
-                insertTrade(payload.new)
+        .channel(`public:game-trades:game_id=eq.${game_id}`)
+        .on(
+            "postgres_changes", 
+            {
+                event: '*', 
+                schema: 'public', 
+                table: 'game-trades', 
+                filter: `game_id=eq.${game_id}`, 
+            },
+            (payload: any) => {
+                Logger(['saw trade: ', payload.new])
+                if(payload.new.game_id === game_id){
+                    insertTrade(payload.new)
+                }
             }
-        })
+        )
+        // .on("INSERT", (payload) => {
+        //     Logger(['saw trade: ', payload.new])
+        //     if(payload.new.game_id === game_id){
+        //         insertTrade(payload.new)
+        //     }
+        // })
         .subscribe()
 
     serverSubscriptions.update((original) => ({...original, trades: subscription}))
@@ -978,6 +1400,8 @@ export async function watchTrades(game_id: string){
 }
 
 export async function getAndWatchTrades(game_id: string){
+    if(!game_id) return;
+
     const {data: trades} = await getTrades(game_id)
     let watching
     if(trades && !get(serverSubscriptions).trades){
@@ -992,7 +1416,7 @@ export async function getAndWatchTrades(game_id: string){
 
 // UI
 
-export const setLoadingModal = (newState) => {
+export const setLoadingModal = (newState: boolean) => {
     Logger(['setting loading modal'])
     showLoadingModal.set(newState)
 }
@@ -1016,7 +1440,7 @@ export function showMessage(params: Partial<MessageParams>){
     appMessage.set(params)
 }
 
-export function setShowAppMessage(newState){
+export function setShowAppMessage(newState: boolean){
     showAppMessage.set(newState)
 }
 

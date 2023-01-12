@@ -16,19 +16,19 @@
     export let isActivePlayer = false
     export let maxSpread = 3
     export let roleData: AppGamePlayer = {...defaultGamePlayer}
-    export let localRates = {
+    export let localRates: {[index: string]: number} = {
         buy: 41,
         sell: 40,
     }
-    export let suit: SuitName | null
+    export let suit: SuitName
     $:canTradeState = $canTrade
     export let playerCards = {...emptyHand}
     export let revealed = 0
-    export let contracts
+    export let contracts: number | null = null
     $:cardCount = suit ? playerCards[suit] : 0
     $:buy = localRates.buy !== roleData.buy ? localRates.buy : roleData.buy
     $:sell = localRates.sell !== roleData.sell ? localRates.sell : roleData.sell
-    function updateLocal(value, type){
+    function updateLocal(value: number, type: string){
         Logger(['would update value: ', value, type])
         localRates[type] = value
     }
@@ -127,7 +127,7 @@
         position: relative;
     }
 
-    .game-markets {
+    :global(.game-markets) {
         position: relative;
         /* border: solid thin lightgray; */
         /* background: cornflowerblue; */
@@ -142,14 +142,14 @@
         max-width: initial;
     }
 
-    .row .row-section {
+    :global(.row .row-section) {
         display: grid;
         grid-gap: 5px;
         padding: 5px;
         border-radius: 6px;
     }
 
-    .row > div {
+    :global(.row > div) {
         /* background: rgb(255, 200, 30, 0.94); */
         /* background: cornflowerblue; */
         background: rgba(255, 255, 255, 0.25);
@@ -157,7 +157,7 @@
         height: 100%;
     }
 
-    .row .market-values { grid-template-columns: 50px 4fr 4fr 3fr }
+    :global(.row .market-values) { grid-template-columns: 50px 4fr 4fr 3fr }
 
     .inner-column {
         display: flex;
@@ -170,11 +170,14 @@
         position: relative;
     }
 
-    .row-section .symbol {
+    :global(.row-section .symbol) {
         /* font-size: 1.5em; */
         font-size: 24px;
         text-align: center;
         opacity: 0.85;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
 </style>

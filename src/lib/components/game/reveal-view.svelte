@@ -1,6 +1,6 @@
 <script lang="ts">
     import { roleKeys } from "$lib/constants";
-import { currentGame, currentUser } from "$lib/state";
+    import { currentGame, currentUser } from "$lib/state";
     import type { PlayerRole, SuitName } from "$lib/types";
     import { get } from "svelte/store";
     import AppMenu from "../app/app-menu.svelte";
@@ -10,7 +10,7 @@ import { currentGame, currentUser } from "$lib/state";
     export let selectedCard: string = ''
     export let localRole: any = ''
     export let reveals: any = {}
-    export let playerHand = {
+    export let playerHand: any = {
         clubs: 0,
         diamonds: 0,
         hearts: 0,
@@ -31,7 +31,10 @@ import { currentGame, currentUser } from "$lib/state";
 </script>
 
 <Backdrop zIndex={10} opacity={0.1}>
-    <div class="player-reveal-view" data-reveal-type={revealType}>
+    <div 
+        class="player-reveal-view" 
+        data-reveal-type={revealType}
+        data-reveal-completed={completedRevealRound}>
             {#if localRole && roleKeys.indexOf(localRole) !== -1}
                 <div class="title-section flex fd-col">
                     <h1>Reveal Phase</h1>
@@ -44,15 +47,14 @@ import { currentGame, currentUser } from "$lib/state";
                     {#each roleKeys as role}
                         <div class="card flex fd-col">
                             <div class="card-wrapper flex" >
-                                <div 
+                                <button 
                                     class="card-main flex" 
-                                    on:click={() => !processingCardSelection && selectCard(role)}
+                                    on:click={() => !completedRevealRound && !processingCardSelection && selectCard(role)}
                                     data-selected={selectedCard === role}
                                     data-exists={playerHand[role] !== 0}
                                 >
                                     <SuitIcon suit={role} size={80}  />
-                                    <!-- <div class="card-extras"></div> -->
-                                </div>
+                                </button>
                             </div>
                             <p class="card-count">
                                 <span>{playerHand[role]}</span>
@@ -216,7 +218,7 @@ import { currentGame, currentUser } from "$lib/state";
         opacity: 0.2;
     }
 
-    .card-main[data-exists="true"]:not([data-seleted="true"]):hover:after {
+    :not([data-reveal-completed="true"]) .card-main[data-exists="true"]:not([data-seleted="true"]):hover:after {
         content: "";
         height: 100%;
         width: 100%;

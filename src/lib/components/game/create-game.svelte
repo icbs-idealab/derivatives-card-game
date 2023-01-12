@@ -7,7 +7,7 @@
     import type { MarketButtonParameters } from "$lib/types";
     import { createNewGame, setLoadingModal } from "$lib/actions";
     import MarketSelector from "./market-selector.svelte";
-    import { browser } from "$app/env";
+    import { browser } from "$app/environment";
     import { goto } from "$app/navigation";
     import { currentUser, showLoadingModal } from "$lib/state";
     import { get } from "svelte/store";

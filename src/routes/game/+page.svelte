@@ -1,20 +1,21 @@
 <script lang="ts">
+	import { goto } from "$app/navigation";
     import { endGame, getAndWatchGame, getAndWatchPlayers, getAndWatchTrades, nextRound, setFinalGameScores, setLoadingModal, startGame, updateGame } from "$lib/actions";
     import Lobby from "$lib/components/game/lobby.svelte";
     import Play from "$lib/components/game/play.svelte";
     import { allRoleNames, emptyHand, emptyReveals, emptySuits, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
     import { getRelevantTrades, getReveals, hasAll, Logger, makeGamePlayersAsObject } from "$lib/helpers";
     import { currentGame, currentUser, gamePlayers, gameTrades, noSuchGame, serverSubscriptions } from "$lib/state";
-    import type { AppGame, SuitName, SuitReveals } from "$lib/types";
+    import type { AppGame, AppGamePlayer, AppGamePlayers, AppGamePlayersByRole, FinalScore, SuitName, SuitReveals } from "$lib/types";
     import { afterUpdate, onMount } from "svelte";
     import { get } from "svelte/store";
     let exists = false
     let haveRequiredRoles = false
     let inLobby = false
     let defaultPlayers = {...makeGamePlayersAsObject()}
-    let players = defaultPlayers
-    let game: AppGame | null
-    let trades = []
+    let players = {...defaultPlayers}
+    let game: AppGame | undefined = undefined
+    let trades: any[] = []
     // $:tradeCount = calculateContracts(trades)
     let contractCount = {...emptyHand}
     let watchingTrades = false
@@ -23,72 +24,50 @@
     let showGameRound = false
     $:playable = haveRequiredRoles && exists
     let playerRole = ''
-    let currentPlayer = get(currentUser)
+    let currentPlayer: AppGamePlayer = get(currentUser)
     let balance = 0
-    let revealRoundIntervalCheck = null
+    let revealRoundIntervalCheck: any = null
 
     let revealRoundState: SuitReveals = getReveals(players, game)
 
-    // function getReveals(ps, game): SuitReveals{
-    //     let reveals = {...emptySuits}
-
-    //     roleKeys.map((role) => {
-    //         reveals[role] = game && game.round ? 
-    //             ps[role].revealed[game.round]
-    //             : ''
-    //     })
-    //     return reveals
-    // }
-
-    // function hasAll(state){
-    //     return state.clubs
-    //         && state.diamonds
-    //         && state.hearts
-    //         && state.spades
-    // }
-
-    // $:isRevealRound = playerRevealRounds[game.round]
-    $:showRevealRound = playerRevealRounds[game.round] && !hasAll(revealRoundState)
+    $:showRevealRound = game && playerRevealRounds[game.round] && !hasAll(revealRoundState) || false
     // let lastRevealed = {...emptySuitsBool}
-    $:lastRevealed = setLastRevealed(game.round, showRevealRound)
+    $:lastRevealed = game && setLastRevealed(game.round, showRevealRound)
 
-    function setLastRevealed(round, revealRound){
+    function setLastRevealed(round: number, revealRound: boolean){
         let newlyRevealed = {...emptySuitsBool}
         if(playerRevealRounds[round] && !revealRound){
             // only when player reveals have been completed
-            roleKeys.forEach(role => {
-                let card = players[role].revealed[round]
+            roleKeys.forEach((role: string) => {
+                let card: SuitName = players[role].revealed[round]
                 if(card && !newlyRevealed[card]){
                     newlyRevealed[card] = true
                 }
             })
         }
-        else {
-            // only when concerend with deck reveals
-            let last = game.deck.revealed.length ? 
-                game.deck.revealed[ game.deck.revealed.length - 1 ]
-                : ""
+        else if(game && game.deck.revealed.length) {
+            // only for deck reveals
+            let last: SuitName = game.deck.revealed[ game.deck.revealed.length - 1 ]
             newlyRevealed[last] = true
         }
 
         return newlyRevealed
-        // lastRevealed = newlyRevealed
     }
 
-    function calculatePlayerInventory(_trades, targetRole?){
+    function calculatePlayerInventory(_trades: any, targetRole?: any){
         let testRole = targetRole || playerRole
-        let contracts = {...emptyHand}
+        let contracts: any = {...emptyHand}
         let balance = 0
-        let tradeMultipliers = {
+        let tradeMultipliers: any = {
             buy: 1,
             sell: -1,
         }
-        let balanceMultipliers = {
+        let balanceMultipliers: any = {
             buy: -1,
             sell: 1,
         }
 
-        _trades.map((trade) => {
+        _trades.map((trade: any) => {
             // contracts[trade.market] += tradeMultipliers[trade.type]
             contracts[trade.market] += trade.market === testRole ?
                 // invert action since player loses contract to buying player and gains from seller
@@ -109,12 +88,10 @@
     }
 
     // admin only
-    function calculateAllInventories(){
+    function calculateAllInventories(){}
 
-    }
-
-    function checkRequiredRoles(players){
-        let roles = {
+    function checkRequiredRoles(players: any){
+        let roles: any = {
             clubs: null,
             diamonds: null,
             hearts: null,
@@ -159,9 +136,9 @@
         }
     }
 
-    function countReveals(_game, _players){
-        let revealed = {...emptyHand}
-        _game.deck.revealed.map(card => {
+    function countReveals(_game: AppGame | undefined, _players: any){
+        let revealed: any = {...emptyHand}
+        _game && _game.deck.revealed.map(card => {
             revealed[card] += 1
         })
         for(let p in _players){
@@ -180,12 +157,12 @@
 
     $:revealed = countReveals(game, players)
 
-    function setPlayers(newPlayers){
+    function setPlayers(newPlayers: any){
         Logger(['setting players locally: ', newPlayers])
         players = newPlayers
     }
 
-    function checkGameDataDiff(newGame){
+    function checkGameDataDiff(newGame: AppGame){
         if(
             game
             && game.game_id
@@ -200,7 +177,8 @@
     }
 
     async function watchTradesInServer(){
-        const res = await getAndWatchTrades(game.game_id)
+        let gameId = game && game.game_id || ""
+        const res = await getAndWatchTrades(gameId)
         Logger(['result of watching trades: ', res])
         watchingTrades = true
         // if(watching){
@@ -242,19 +220,20 @@
         }
     }
 
-    async function finalAction(_game){
+    async function finalAction(_game: any){
         let lastRevealed = _game.deck.revealed[_game.deck.revealed.length -1]
         Logger(['last revealed: ', lastRevealed])
 
         // calc player scores
         let fPlayers = get(gamePlayers)
         Logger(['stringified game players: ', JSON.stringify(fPlayers)])
-        Logger(['Fplayers: ', fPlayers])
-        let playerResults: {[index: string]: {balance: number, contracts: any, lastRevealed: string}} = {}
+        Logger(['f-players: ', fPlayers])
+        // let playerResults: {[index: string]: {balance: number, contracts: any, lastRevealed: string}} = {}
+        let playerResults: FinalScore = {}
 
         let allTrades = get(gameTrades)
         for(let player in fPlayers){
-            let targetPlayer = fPlayers[player]
+            let targetPlayer: any = fPlayers[player]
 
             let relevant = getRelevantTrades(allTrades, targetPlayer.user_id, targetPlayer.role)
             Logger(['relevant trades for player: ', relevant])
@@ -266,7 +245,6 @@
                 lastRevealed,
                 // final: inventory.balance + (inventory.contracts[lastRevealed] * 100)
             }
-
 
             console.table({
                 role: player,
@@ -318,7 +296,7 @@
         // setLoadingModal(false)
     }
 
-    currentGame.subscribe(newGame => {
+    currentGame.subscribe((newGame: AppGame) => {
         if(checkGameDataDiff(newGame)){
             game 
                 && newGame
@@ -328,11 +306,10 @@
 
             game = newGame
             
-            
             if(playerRevealRounds[newGame.round]){
                 revealRoundState = getReveals(players, game)
                 setTimeout(() => {
-                    showRevealRound = playerRevealRounds[game.round] && !hasAll(revealRoundState)
+                    showRevealRound = playerRevealRounds[newGame.round] && !hasAll(revealRoundState)
                 })
                 checkRevealRound(newGame, players)
             }
@@ -347,21 +324,21 @@
     })
 
 
-    function updateReveals(newPlayers){
+    function updateReveals(newPlayers: any){
         console.log('$R$ syncing reveals... ', revealRoundState)
         if(hasAll(revealRoundState)){
             clearRevealInterval()
         }
         else{
-            let reveals = getReveals(newPlayers, game)
+            let reveals: any = getReveals(newPlayers, game)
             for(let rev in reveals){
-                reveals[rev] && !revealRoundState[rev] && (revealRoundState[rev] = reveals[rev])
+                reveals[rev] && !revealRoundState[rev as SuitName] && (revealRoundState[rev as SuitName] = reveals[rev])
             }
         }
     }
 
     function checkRevealRound(_game =  game, _players = players){
-        if(playerRevealRounds[game.round]){
+        if(game && playerRevealRounds[game.round]){
             console.log('$R$ state?:: ', revealRoundState)
 
             if(!hasAll(revealRoundState)){
@@ -406,38 +383,7 @@
         Logger(['got game players: ', newPlayers])
         setPlayers(newPlayers)
         checkRequiredRoles(newPlayers)
-
-        checkRevealRound(game, newPlayers)
-
-        // if(playerRevealRounds[game.round]){
-        //     console.log('$R$ state?:: ', revealRoundState)
-
-        //     if(!hasAll(revealRoundState)){
-        //         if(!revealRoundIntervalCheck){
-        //             console.log('$R$ no revealRound interval check')
-        //             updateReveals(newPlayers)
-        //             // revealRoundState = getReveals(newPlayers)
-        //             revealRoundIntervalCheck = setInterval(() => {
-        //                 // revealRoundState = getReveals(newPlayers)
-        //                 updateReveals(newPlayers)
-        //             }, 4000)
-        //         }
-        //         else{
-        //             // revealRoundState = getReveals(newPlayers)
-        //             updateReveals(newPlayers)
-        //         }
-        //     }
-        //     else{
-        //         console.log('$R$ somehow has all?:: ', revealRoundState)
-        //     }
-
-        // }
-        // else{
-        //     clearInterval(revealRoundIntervalCheck)
-        //     revealRoundIntervalCheck = null
-        //     console.log('$R$ cleared interval()! ', revealRoundIntervalCheck)
-        // }
-        
+        checkRevealRound(game, newPlayers)        
         if(!playerRole){
             calcPlayerRole()
         }
@@ -463,6 +409,10 @@
     })
     
     afterUpdate(() => {
+        if(!currentPlayer.id){
+            goto('/')
+        }
+
         if(playable && !watchingTrades){
             Logger(['will watch all trades'])
             watchTradesInServer()
@@ -497,25 +447,27 @@
         <div class="play-wrapper">
             <!-- <h3>A game is available</h3>
             <h1>{$currentGame.game_id}</h1> -->
-            <Play
-                showRevealRound={showRevealRound}
-                showGameRound={showGameRound}
-                haveRequiredRoles={haveRequiredRoles}
-                players={players}
-                game={game}
-                trades={trades}
-                balance={balance}
-                contracts={contractCount}
-                playerRole={playerRole}
-                revealed={revealed}
-                startGame={start}
-                finishGame={finishGame}
-                revealsForRound={revealRoundState}
-                nextRound={goToNextRound}
-                lastRevealed={lastRevealed}
-                calcPlayerRole={calcPlayerRole}
-                clearRevealInterval={clearRevealInterval}
-            />
+            {#if game}
+                <Play
+                    showRevealRound={showRevealRound}
+                    showGameRound={showGameRound}
+                    haveRequiredRoles={haveRequiredRoles}
+                    players={players}
+                    game={game}
+                    trades={trades}
+                    balance={balance}
+                    contracts={contractCount}
+                    playerRole={playerRole}
+                    revealed={revealed}
+                    startGame={start}
+                    finishGame={finishGame}
+                    revealsForRound={revealRoundState}
+                    nextRound={goToNextRound}
+                    lastRevealed={lastRevealed}
+                    calcPlayerRole={calcPlayerRole}
+                    clearRevealInterval={clearRevealInterval}
+                />
+            {/if}
 
             <!-- <div class="div flex" style="position:fixed; top: 50px; right: 50px; font-size: 0.65em;">
                 <pre>{JSON.stringify(contractCount)}</pre>

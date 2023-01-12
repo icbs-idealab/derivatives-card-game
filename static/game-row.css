@@ -1,0 +1,58 @@
+.row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    grid-template-rows: 100%;
+    grid-gap: 15px;
+    cursor: default;
+    position: relative;
+}
+
+.game-markets {
+    position: relative;
+    /* border: solid thin lightgray; */
+    /* background: cornflowerblue; */
+    height: 100%;
+    height: calc((85px * 4) + (3 * 10px) + 100px);
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, 85px);
+    grid-gap: 10px;
+    /* max-width: 1000px; */
+    max-width: initial;
+}
+
+.row .row-section {
+    display: grid;
+    grid-gap: 5px;
+    padding: 5px;
+    border-radius: 6px;
+}
+
+.row > div {
+    /* background: rgb(255, 200, 30, 0.94); */
+    /* background: cornflowerblue; */
+    background: rgba(255, 255, 255, 0.25);
+    width: 100%;
+    height: 100%;
+}
+
+.row .market-values { grid-template-columns: 50px 4fr 4fr 3fr }
+
+.inner-column {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.row-section {
+    position: relative;
+}
+
+.row-section .symbol {
+    /* font-size: 1.5em; */
+    font-size: 24px;
+    text-align: center;
+    opacity: 0.85;
+}

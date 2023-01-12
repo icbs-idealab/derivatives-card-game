@@ -5,6 +5,7 @@
   export let action;
   export let disabled: boolean = false;
   export let icon = '';
+  export let active: boolean = false
   export let fill: boolean = false;
   function handleClick() {
     if (action && typeof action === "function") {
@@ -17,6 +18,7 @@
   class="button" 
   data-button-type={type} 
   data-fill={fill} 
+  data-active={active}
   data-no-text={!label}
   on:click={handleClick} 
   disabled={disabled}
@@ -146,6 +148,28 @@
   [data-button-type="default"] {
     background: var(--dm-default-button);
     color: var(--dm-white);
+  }
+
+  [data-button-type="tab"]:last-child {
+    border-left: none
+  }
+
+  [data-button-type="tab"] {
+    width: 100%;
+    /* background: var(--dm-default-button); */
+    background: lightgray;
+    color: var(--dm-default-button);
+    /* color: var(--dm-white); */
+    border-radius: 0;
+    box-shadow: none;
+    border: solid thin lightgray;
+    border-top: none;
+  }
+
+  [data-button-type="tab"][data-active="true"] {
+    background: transparent;
+    color: var(--dm-default-button);
+    border-bottom: none;
   }
 
   .button-icon-wrapper {

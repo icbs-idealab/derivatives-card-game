@@ -1,6 +1,8 @@
-export type SuitName = 'clubs' | 'diamonds' | 'hearts' | 'spades'
+import type { RealtimeChannel } from "@supabase/supabase-js"
 
-export type PlayerRole = SuitName | 'speculator1' | 'speculator2' | 'speculator3' | 'speculator4' | 'speculator5' | 'speculator6' | 'guest'
+export type SuitName = 'clubs' | 'diamonds' | 'hearts' | 'spades'
+export type SpeculatorRoles = 'speculator1' | 'speculator2' | 'speculator3' | 'speculator4' | 'speculator5' | 'speculator6'
+export type PlayerRole = SuitName | SpeculatorRoles | 'guest' | ""
 
 export type SuitSymbol = '&clubs' | '&diamonds' | '&hearts' | '&spades' | '&#128065' | '&#129300' | '&#128540'
 
@@ -55,6 +57,15 @@ export interface CardHand {
 }
 
 type rateName = 'clubs_rate' | 'diamonds_rate' | 'hearts_rate' | 'spades_rate'
+export type FinalScore = {
+    [index: string]: {
+        balance: number
+        contracts: {
+            [index: SuitName]: number
+        }
+        lastRevealed: SuitName
+    }
+}
 
 export interface AppGame {
     id?: string // optional as only present in the supabase record
@@ -71,7 +82,7 @@ export interface AppGame {
     completed: boolean
     maximum_spread: number
     deck: GameDeck
-    final_scores?: any    
+    final_scores?: FinalScore
 }
 
 // DECK
@@ -98,8 +109,10 @@ export interface GameDeckCount {
 }
 
 //
+export type RevealRoundNumnber = 1 | 6 | 11 | 21 | 26
 
 interface RevealRounds {
+    [index: number | string]: string
     1: string,
     6: string,
     11: string,
@@ -107,21 +120,55 @@ interface RevealRounds {
     26: string,
 }
 
+export interface ActionCount {
+    [index: string | number]: number
+}
+
 export interface AppGamePlayer {
     user_id: string
     player_name: string
     hand: SuitCount
     revealed: RevealRounds
-    role: string // for ref/convenience only, otherwise derived from column
+    // role: string // for ref/convenience only, otherwise derived from column
+    role: PlayerRole // for ref/convenience only, otherwise derived from column
     buy: number
     sell: number
     game_id: string
     is_admin: boolean
+    bot_action_count?: ActionCount
+    rate_change_log: RateChangeLog[]
 }
+
+export interface RateChangeLog {
+    buy: number
+    sell: number
+    time: number
+}
+
 
 export interface AppLobbyPlayer extends AppGamePlayer {
     create_at?: any
     game_id?: string
+}
+
+export interface LobbyPlayerBasicInfo {
+    player_name: string
+    user_id: string
+    game_id?: string
+    is_bot?: boolean
+}
+
+export interface UnassignedLobbyPlayer {
+    user_id: string
+    game_id: string
+    player_name: string
+    id_old: number
+    create_at?: any
+}
+
+export interface LobbyRequirements {
+    gamePlayers: any
+    lobbyPlayers: any
 }
 
 export interface AppGameRole extends AppGamePlayer {
@@ -156,6 +203,14 @@ export interface SuitCount {
     spades: number
 }
 
+export interface BotSuitCount {
+    [index: SuitName]: number
+    clubs: number
+    diamonds: number
+    hearts: number
+    spades: number
+}
+
 export type GetHandProps = Partial<SuitCount>
 
 interface RevealedRoundSuits {
@@ -163,6 +218,12 @@ interface RevealedRoundSuits {
 }
 
 export type AppGamePlayers = AppGamePlayer[]
+
+export type AppGamePlayersByRole = {
+    // [index: PlayerRole]: AppGameRole
+    // [index: string]: AppGameRole | AppGamePlayer
+    [index: string]: AppGamePlayer
+}
 
 export interface OldGamePlayers {
     game_id: string
@@ -191,6 +252,14 @@ export interface CreatedGameResult {
     data: any
     error: any
     success: boolean
+}
+
+export interface PlayerGameResult {
+    [index: string]: {
+        balance: number, 
+        contracts: any, 
+        lastRevealed: string
+    }
 }
 
 export type GamePlayers = AppUser[]
@@ -282,3 +351,69 @@ export interface GameArchive {
 }
 
 export type GameEndState = 'Game Completed' | 'Game Ended' | ''
+
+export interface ServerSubscriptions {
+    [index: string]: null | RealtimeChannel
+}
+export interface Bots {
+    hearts: LobbyPlayerBasicInfo
+    clubs: LobbyPlayerBasicInfo
+    spades: LobbyPlayerBasicInfo
+    diamonds: LobbyPlayerBasicInfo
+}
+
+export type GamePhase = 'early' | 'mid' | 'late' | 'end'
+export type GamePhases = GamePhase[]
+
+export interface BotRateAdjustments {
+    early: {
+        [index: number]: number
+    }
+    mid: {
+        [index: number]: number
+    }
+    late: {
+        [index: number]: number
+    }
+    end: {
+        [index: number]: number
+    }
+}
+
+export interface BotRates {
+    buy: number
+    sell: number
+}
+
+export interface BotParams {
+    early_game_frequency: number
+    mid_game_frequency: number
+    late_game_frequency: number
+    end_game_frequency: number
+    early_game_max_trades: number
+    mid_game_max_trades: number
+    late_game_max_trades: number
+    end_game_max_trades: number
+
+    mid_game_start_round: number
+    late_game_start_round: number
+    end_game_start_round: number
+
+    frequency_multiplier: number
+
+    min_sell_rate: number
+    max_sell_rate: number
+    min_buy_rate: number
+    max_buy_rate: number
+}
+
+export interface NumberRange {
+    min: number
+    max: number
+}
+
+export interface BotTradeData {
+    market: SuitName
+    type: string
+    price: number
+}

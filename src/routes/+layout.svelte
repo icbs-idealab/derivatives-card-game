@@ -11,7 +11,7 @@
 
     <!-- user details -->
 
-    {#if $page.path !== '/admin'}
+    {#if $page.url.pathname!== '/admin'}
         <div class="user-details">
             <div class="current-game flex jc-start">
                 {#if activeGame.game_id}
@@ -47,7 +47,7 @@
 
     {#if activeUser && activeUser.id}
         <AppMenu 
-            hasGame={activeUser.user_metadata.game_id}
+            hasGame={activeUser.user_metadata && activeUser.user_metadata.game_id}
             game={activeGame}
             isAuthenticated={activeUser.id !== null}
             inRevealPhase={false}
@@ -68,6 +68,10 @@
         <AppErrorMessage />
     {/if}
 
+    {#if $showSignUpSuccessMessageWithEmail}
+        <SignUpSuccess />
+    {/if}
+
     {#if $showLoadingModal}
         <LoadingModal />
     {/if}
@@ -84,13 +88,13 @@
     import AppMenu from "$lib/components/app/app-menu.svelte";
     import RedirectHandler from "$lib/components/util/redirect-handler.svelte";
     import { getReveals, hasAll, Logger, redirect } from "$lib/helpers";
-    import { currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage, gameChecked, showArchivesModal, gamePlayers, currentGame} from "$lib/state";
+    import { currentUser, passwordUpdated, reloadAfterRedirect, serverSubscriptions, showEndGameModal, showGameRules, showLoadingModal, showPasswordUpdater, authChecked, showAppMessage, appMessage, gameChecked, showArchivesModal, gamePlayers, currentGame, showSignUpSuccessMessageWithEmail} from "$lib/state";
     import { afterUpdate, onMount } from "svelte";
     import LoadingModal from '$lib/components/app/loading-modal.svelte';
     import { page } from '$app/stores';
     import type { AppGame, SuitReveals, SupabaseUser } from '$lib/types';
     import { defaultGame, playerRevealRounds } from '$lib/constants';
-    import { browser } from '$app/env';
+    import { browser } from '$app/environment';
     import EndGameModal from '$lib/components/app/end-game-modal.svelte';
     import AppRules from '$lib/components/app/app-rules.svelte';
     // import UpdatePassword from '$lib/components/auth/update-password.svelte';
@@ -100,11 +104,12 @@
     import AppArchiveModal from '$lib/components/app/app-archive-modal.svelte';
     import LoadingText from '$lib/components/app/loading-text.svelte';
     import { get } from 'svelte/store';
+	import SignUpSuccess from '$lib/components/auth/sign-up-success.svelte';
 
     // let subs = get(serverSubscriptions)
     $:ui = 'light'
     let activeUser: Partial<SupabaseUser>  = {
-        id: null, 
+        id: undefined, 
         user_metadata: {
             game_id: null,
             player_name: null,
@@ -126,60 +131,61 @@
             })
     }
 
-    function compareUserData(newUserData){
+    function compareUserData(newUserData: any){
         let a = JSON.stringify({
-                id: newUserData.id,
-                meta: newUserData.user_metadata,
-            })
-            let b = JSON.stringify({
-                id: activeUser.id,
-                meta: activeUser.user_metadata,
-            })
-            
-            return a === b
+            id: newUserData.id,
+            meta: newUserData.user_metadata,
+        })
+        let b = JSON.stringify({
+            id: activeUser.id,
+            meta: activeUser.user_metadata,
+        })
+        
+        return a === b
     }
 
-    function watchRemoteGame(newUserData){
+    function watchRemoteGame(newUserData: any){
         newUserData.user_metadata.game_id && !$serverSubscriptions.game && getAndWatchGame(newUserData.user_metadata.game_id)
     }
     
-    function updateLocalUser(newUserData){
+    function updateLocalUser(newUserData: any){
         let isSame = compareUserData(newUserData)
         !isSame && (activeUser = newUserData)
     }
 
-    function updatePath(newUserData){
-        $page.path === "/" && newUserData.user_metadata.game_id && redirect('/game')
+    function updatePath(newUserData: any){
+        $page.url.pathname=== "/" && newUserData.user_metadata.game_id && redirect('/game')
     }
 
-    function handleNewData(newUserData){
-        let isSame = compareUserData(newUserData)
+    function processNewUserData(newUserData: any){
+        // let isSame = compareUserData(newUserData)
         if(newUserData.id){
             // newUserData.user_metadata.game_id && watchGame(newUserData.user_metadata.game_id)
-            Logger([ 'server subs: ', $serverSubscriptions.game ])
+            // Logger([ 'server subs: ', $serverSubscriptions.game ])
+            Logger([ 'newUserData is: ', newUserData ])
             watchRemoteGame(newUserData)
             updateLocalUser(newUserData)
             updatePath(newUserData)
         }
         else{
-            console.log('path is: ', $page.path)
-            activeUser = {id: null, user_metadata: {}}
-            $page.path !== "/" && $page.path !== "/admin" && $page.path !== "/reset-password" && $authChecked && redirect('/')
+            console.log('path is: ', $page.url.pathname)
+            activeUser = {id: undefined, user_metadata: {}}
+            $page.url.pathname!== "/" && $page.url.pathname!== "/admin" && $page.url.pathname!== "/reset-password" && $authChecked && redirect('/')
         }
     }
 
-    async function isPasswordUpdated(newUserData){
+    async function isPasswordUpdated(newUserData: any){
         const {data, error} = await checkIfPasswordChanged(newUserData)
         Logger(['$$pwd: ', data])
         Logger(['$$pwd error: ', error])
-        return data[0]
+        return data && data[0]
     }
 
     function watch(){
         currentUser.subscribe( async userUpdate => {
             // let isSame = compareUserData(userUpdate)
             Logger([`<_layout> detected a user change: `, userUpdate])
-            // handleNewData(userUpdate, isSame)
+            // processNewUserData(userUpdate, isSame)
 
             if(userUpdate.id){
                 let updatedPassword = !$passwordUpdated && await isPasswordUpdated(userUpdate)
@@ -188,17 +194,16 @@
                     updateLocalUser(userUpdate)
                     Logger(['$$pwd will show password updater'])
                     Logger(['$$was auth checked? ', $authChecked])
-                    // $authChecked && !$showPasswordUpdater && showPasswordUpdater.set(true)
                     $authChecked && !$showPasswordUpdater && redirect('/update-password')
                     Logger(['$$SPWU ', $showPasswordUpdater])
                 }
                 else{
                     $authChecked && $showPasswordUpdater && showPasswordUpdater.set(false)
-                    handleNewData(userUpdate)
+                    processNewUserData(userUpdate)
                 }
             }
             else{
-                handleNewData(userUpdate)
+                processNewUserData(userUpdate)
             }
 
         })
@@ -241,18 +246,24 @@
     }
 
     let revealRoundState: SuitReveals = getReveals(get(gamePlayers), activeGame)
-    $:showRevealRound = playerRevealRounds[activeGame.round] && !hasAll(revealRoundState)
+    $: activeGameRound = activeGame && activeGame.round || undefined
+    $:showRevealRound = typeof activeGameRound === 'number' && playerRevealRounds[ activeGameRound ] && !hasAll(revealRoundState)
 
     onMount(() => {
         watch()
+        // let obj: {[index: number]: any} = {}
+        // new Array(33).fill(true).map((a, ind: number) => {
+        //     obj[ind] = "" 
+        // })
+        // Logger(['OBJ: ', JSON.stringify(obj)])
     })
 
     let nonRedirectPaths = ['/', '/admin', '/update-password', '/reset-password', '/account-verified']
 
     afterUpdate(() => {
-        if(authChecked && !activeUser.id && nonRedirectPaths.indexOf($page.path) === -1){
-            Logger(['afterUpdate() triggered'])
-            redirect('/')
+        if($authChecked && !activeUser.id && nonRedirectPaths.indexOf($page.url.pathname) === -1){
+            Logger(['afterUpdate() triggered', activeUser])
+            // redirect('/')
         }
     })
 </script>
@@ -269,11 +280,6 @@
         padding: 5vw;
     }
 
-    /* .checking-auth h1 {
-        font-size: 1.28em;
-        font-weight: 100;
-    } */
-
     .user-details {
         position: fixed;
         top: 35px;
@@ -285,33 +291,4 @@
         font-weight: 300;
         color: var(--dm-mid)!important;
     }
-
-    /* [data-hide="true"] {
-        opacity: 0!important;
-    }
-
-    .copied {
-        position: absolute;
-        right: 0;
-        top: 0;
-        background: lightgray;
-        border-radius: 4px;
-        padding: 4px;
-        font-size: 0.8em;
-        transition: all .2s ease;
-        opacity: 0;
-        z-index: 5;
-        width: 40px;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .copied[data-show="true"] {
-        right: -60px;
-        opacity: 1;
-    } */
-    /* .user-details span {
-        font-weight: 300;
-        color: black!important;
-    } */
 </style>

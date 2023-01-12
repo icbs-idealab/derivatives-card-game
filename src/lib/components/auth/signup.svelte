@@ -2,35 +2,36 @@
     import Button from "$lib/components/button/button.svelte";
     import TextArea from "$lib/components/input/text-area.svelte";
     import TextInput from "$lib/components/input/text-input.svelte";
+	import PasswordInput from "../input/password-input.svelte";
     export let email: string = ''
-    export let message: string = ''
+    export let password: string = ''
     export let updateEmail = (value: string) => {}
-    export let updateMessage = (value: string) => {}
+    export let updatePassword = (value: string) => {}
 
-    function onUpdateEmail({target}){ 
+    function onUpdateEmail({target}: any){ 
         updateEmail(target.value)
     }
-    function onUpdatePassword({target}){ 
-        updateMessage(target.value)
+    function onUpdatePassword({target}: any){ 
+        updatePassword(target.value)
     }
 
-    export function onSubmit(submission: any){
+    export let onSubmit = (submission: any) => {
         console.log('submitting')
         console.table(submission)
     }
 
     function submit(){
         if(onSubmit && typeof onSubmit === 'function'){
-            onSubmit({email, message})
+            onSubmit({email, password})
         }
     }
 </script>
 
 <div class="request-access">
     <TextInput value={email} onUpdate={onUpdateEmail} placeholder="Enter your email" />
-    <TextArea value={message} onUpdate={onUpdatePassword} placeholder="Enter your message" />
+    <PasswordInput value={password} onUpdate={onUpdatePassword} placeholder="Enter your Password" />
     <div class="button-container">
-        <Button type="proceed" label="Request" action={submit} />
+        <Button type="proceed" label="sign-up" action={submit} />
     </div>
 </div>
 

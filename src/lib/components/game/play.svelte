@@ -1,11 +1,22 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
-
-    import { getTrades, revealPlayerCard } from "$lib/actions";
-    import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, roleKeys } from "$lib/constants";
-    import { calculatePlayerInventory, getRelevantTrades, Logger, makeGamePlayersAsObject, valueWithSymbol } from "$lib/helpers";
-    import { currentGame, currentUser, gameTrades } from "$lib/state";
-    import type { AppGame, GameEndState, CardHand, RevealRounds, SuitName } from "$lib/types";
+    import { goto } from "$app/navigation";
+    import { getBotParams, getTrades, revealPlayerCard, performBotActions, updateBotsInCloud } from "$lib/actions";
+    import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
+    import { calculatePlayerInventory, getBotParamFrequency, getBotsFromPlayers, getRandomCardFromHand, getRelevantTrades, Logger, makeGamePlayersAsObject, valueWithSymbol } from "$lib/helpers";
+    import { botParams, currentGame, currentUser, gamePhase, gamePlayers, gameTrades } from "$lib/state";
+    import type { AppGame, 
+        GameEndState, 
+        CardHand, 
+        RevealRounds, 
+        SuitName, 
+        AppGamePlayer,
+        SuitCount,
+		BotSuitCount,
+		AppGamePlayersByRole,
+		RevealRoundNumnber
+    } from "$lib/types";
+	import { afterUpdate, onMount } from "svelte";
+	import { get_slot_changes } from "svelte/internal";
     import { get } from "svelte/store";
     import Backdrop from "../app/backdrop.svelte";
     import Button from "../button/button.svelte";
@@ -18,12 +29,12 @@ import { goto } from "$app/navigation";
     export let showGameRound = false
     export let showRevealRound = false
     export let haveRequiredRoles = false
-    export let trades = []
+    export let trades: any[] = []
     export let balance = 0
     export let contracts = {...emptyHand}
     export let playerRole: string = ''
     export let game: AppGame = {...defaultGame}
-    export let lastRevealed = {...emptySuitsBool}
+    export let lastRevealed: {[index: string]: boolean} = {...emptySuitsBool}
     let defaultPlayers = {...makeGamePlayersAsObject()}
     export let players = {...defaultPlayers}
     export let revealed = {...emptyHand}
@@ -40,6 +51,18 @@ import { goto } from "$app/navigation";
 
     let desiredRound = game.round
     let canUseNext = true
+    let derivedFinalBalance: string | null = null
+    let isRevealRound: boolean = true
+    let botActionInterval: any = null
+    let revealingBotHands = false
+    let calculatingBotAction: NodeJS.Timeout | null = null
+    // $: gamePhase = getGamePhase()
+    // $: botIntervalTime = botParams && botParams. 2500 as number
+    $: botIntervalTime = 2500 as number
+    $:derivedBalance = valueWithSymbol(balance)
+    $:bots = getBotsFromPlayers(players)
+    
+    $:isPractice = Object.keys(bots).length > 0
     function initiateGame(){
         desiredRound = game.round + 1
         canUseNext = false
@@ -47,6 +70,7 @@ import { goto } from "$app/navigation";
             startGame()
         }, 100)
     }
+
     function goToNextRound(){
         desiredRound = game.round + 1
         canUseNext = false
@@ -57,16 +81,7 @@ import { goto } from "$app/navigation";
 
     export let calcPlayerRole: () => any
 
-    // function withSymbol(val){
-    //     let symbol = val < 0 ? '-' : ''
-    //     let stringVal: any = String(Math.abs(val))
-    //     let offset = stringVal.length - 2
-    //     let by100 = stringVal.substr(0, offset) + '.' + stringVal.substr(offset)
-    //     let printValue = `${by100}`
-    //     return `${symbol}$${printValue}`
-    // }
-
-    async function getFinal(game_id){
+    async function getFinal(game_id: string){
         if(game_id){
             const {data} = await getTrades(game_id)
             if(Array.isArray(data)){
@@ -95,22 +110,126 @@ import { goto } from "$app/navigation";
         if(desiredRound === game.round){
             canUseNext = true
         }
+
+        if(playerRevealRounds[ update.round ]){
+            isRevealRound = true
+        } 
+        else isRevealRound = false
+
+        // when game data get_slot_changes, reset the interval counter to make sure the bot will act the appropriate number of times for a given round
+        // resetBotActionInterval()
+        startBotInterval()
     })
 
+    function getBots(){
+        return players.filter((player: AppGamePlayer) => player.user_id.includes('-bot'))
+    }
 
-    $:derivedBalance = valueWithSymbol(balance)
-    // $:derivedFinalBalance = playerRole && game && game.final_scores ? withSymbol(game.final_scores[playerRole].final) : ''
-    // $:final = await getFinal()
-    let derivedFinalBalance = null
-    // $:derivedFinalBalance = playerRole 
-    //     && game 
-    //     && game.game_id
-    //     && game.completed ? 
-    //         getFinal(game.game_id) 
-    //         : ''
-    // $:derivedFinalBalance = derivedBalance
+    async function revealBotHands(){
+        revealingBotHands = true
+        let gId = game.game_id
+        const targetBots: {[index: string]: AppGamePlayer} = {}
+        for(let playerBot in bots){
+            let bot = bots[playerBot]
+            let canRevealCard = bot.revealed.hasOwnProperty(String(game.round)) && bot.revealed[game.round] === ""
+            if(canRevealCard){
+                let botHand = bot.hand as any
+                let randomCard = getRandomCardFromHand(botHand) as SuitName
+                // let newBotHand: {[index: string]: number} = {...bot.hand}
+                let newBotHand: BotSuitCount = {...bot.hand}
+                newBotHand[randomCard] -= 1
     
-    function calcHand(players, playerRole){
+                let newBotRevealed: {[index: string | number]: string} = {...bot.revealed}
+                newBotRevealed[game.round] = randomCard
+    
+                targetBots[playerBot] = {
+                    ...bots[playerBot],
+                    hand: newBotHand as SuitCount,
+                    revealed: newBotRevealed as any
+                }
+            }
+        }
+
+        const {success, error, result} = await updateBotsInCloud(gId, targetBots)
+        setTimeout(() => revealingBotHands = false)
+        !error && Logger(['New Bots are: ', targetBots])
+        !error && success && result && Logger(['Result of setting new Bots is: ', result])
+    }
+
+    function resetBotActionInterval(){
+        clearInterval(botActionInterval)
+        botActionInterval = null
+    }
+
+    function startBotInterval(){
+        if(!botActionInterval){
+            let freq = getBotParamFrequency()
+            Logger(['BOT ACTION FREQ: ', freq])
+            botActionInterval = setInterval(calculateBotAction, freq)
+        }
+    }
+
+    function calculateBotAction(){
+        // determine which action makes most sense for bot to take given the current round
+        // only runs when showRevealRound is false
+        Logger(['CalculatingBotAction()'])
+        if(calculatingBotAction){ 
+            return null 
+        }
+        else if($currentGame.started) {
+            calculatingBotAction = setTimeout(() => {
+                // 1. determine if game stage
+                Logger(['BOT GAME PHASE: ', $gamePhase])
+                Logger(['Maximum number of actions per bot',  $botParams[ `${$gamePhase}_game_max_trades`]])
+                
+                let targetBots: AppGamePlayersByRole = {}
+        
+                function getActionCountForRound(targetBot: string){
+                    return (bots[targetBot].bot_action_count as any)[ game.round ]
+                }
+        
+                // 2. check that maximum number of trades have not been made by bot (stored in player records)
+                for(let _bot in bots){
+                    // if(bots[_bot].bot_action_count){
+                        let botCanAct = (bots[_bot].bot_action_count as any)[game.round] < $botParams[ `${$gamePhase}_game_max_trades` ];
+                        Logger([`${_bot} bot acting in ${game.round}! action count: `, getActionCountForRound(_bot) ])
+                    if( botCanAct && !showRevealRound ){
+                        // clone bot into new object that we can manipulate 
+                        targetBots[_bot] = {...bots[_bot]};
+                    }
+                }
+        
+                Logger([
+                    'Target Bots: ', 
+                    targetBots
+                ])
+        
+                // pass into function that loops over cloned bots, makes trades and updates player records
+                Object.keys(targetBots).length > 0 ? 
+                    triggerBotAI(targetBots)
+                    : resetBotActionInterval()
+
+                clearCalcTimeout()
+            })
+        }
+    }
+
+    function clearCalcTimeout(){
+        if(calculatingBotAction){
+            clearTimeout(calculatingBotAction)
+            calculatingBotAction = null
+        }
+    }
+
+    async function triggerBotAI(_bots: AppGamePlayersByRole){
+        // trade with bot
+        let result = await performBotActions(_bots)
+        Logger(['RESULT OF BOT ACTION: ', result])
+        // increment action_counts for each bot
+    }
+
+    
+    function calcHand(players: {[index: string]: any}, playerRole: string){
         if(playerRole){
             let p = players[playerRole]
             let h = {...p.hand}
@@ -135,33 +254,40 @@ import { goto } from "$app/navigation";
     $:hand = calcHand(players, playerRole)
 
     $:endState = game.ended && game.round === 33 ? 
-        'Game Completed' : 
-            game.ended && game.round !== 33 ? 
+        'Game Completed' :
+            game.ended && game.round !== 33 ?
                 'Game Ended'
                 : '' as GameEndState
 
-    function calcHandFromReveals(playerHandData){
-        let {hand, revealed} = playerHandData
-        if(hand && revealed){
-            let usableHand: CardHand = {...hand}
-            
-            for(let round in revealed){
-                let revealedCard: SuitName = revealed[round]
-                if(revealedCard){
-                    usableHand[ revealedCard ] -= 1
-                }
-            }
-            return usableHand
-        }
-        else {
-            return emptyHand
-        }
+    function calcHandFromReveals(playerHandData: any){
+        Logger(['Calculating hand!'])
+        let {hand} = playerHandData
+        return hand
     }
+
+    // function calcHandFromReveals(playerHandData: any){
+    //     Logger(['Calculating hand!'])
+    //     let {hand, revealed} = playerHandData
+    //     if(hand && revealed){
+    //         let usableHand: CardHand = {...hand}
+            
+    //         for(let round in revealed){
+    //             let revealedCard: SuitName = revealed[round]
+    //             if(revealedCard){
+    //                 usableHand[ revealedCard ] -= 1
+    //             }
+    //         }
+    //         return usableHand
+    //     }
+    //     else {
+    //         return emptyHand
+    //     }
+    // }
 
     let processingCardSelection = false
     let selectedCard = ''
 
-    function selectCardForReaval(card){
+    function selectCardForReaval(card: any){
         selectedCard = card
     }
 
@@ -169,8 +295,8 @@ import { goto } from "$app/navigation";
         if(playerRole && players[playerRole]){
             processingCardSelection = true
             let update = players[playerRole]
-            // update.hand[selectedCard] -= 1
             update.revealed[game.round] = selectedCard
+            // update.hand[selectedCard] -= 1
 
             Logger(['will update player with new hand: ', update])
 
@@ -193,7 +319,7 @@ import { goto } from "$app/navigation";
     }
 
     export let localRates = {
-        buy: 36,
+        buy: 41,
         sell: 40,
     }
     
@@ -213,9 +339,9 @@ import { goto } from "$app/navigation";
             end: '$0.00',
             final: '$0.00',
         }
-        if(playerRole){
+        if(playerRole && game.final_scores){
             let b = game.final_scores[playerRole].balance
-            let markets = game.final_scores[playerRole].contracts
+            let markets: {[index:string]: number} = game.final_scores[playerRole].contracts
             let last = game.final_scores[playerRole].lastRevealed
             let bonus = markets[last] * 100
             scores.end = valueWithSymbol(b)
@@ -226,12 +352,29 @@ import { goto } from "$app/navigation";
     }
 
     function getEndGameContracts(){
-        let endGameHand = {...emptyHand}
-        if(playerRole){
+        let endGameHand: {[index: string]: any} = {...emptyHand}
+        if(playerRole && game.final_scores){
             endGameHand = game.final_scores[playerRole].contracts
         }
         return endGameHand
     }
+
+    async function retrieveBotParams(){
+        let {data, error} = await getBotParams()
+        // botParams = data
+    }
+
+    afterUpdate(() => {
+        showRevealRound && isPractice && revealBotHands()
+        // isPractice && showRevealRound && botActionInterval && resetBotActionInterval()
+        isPractice && showRevealRound && resetBotActionInterval()
+        isPractice && !showRevealRound && !botActionInterval && startBotInterval()
+    })
+
+    onMount(() => {
+        // should update code to only retrieve bot parameters if bots have been detected for a given game
+        retrieveBotParams()
+    })
 
 </script>
 
@@ -243,25 +386,6 @@ import { goto } from "$app/navigation";
             players={players}
         />
         <SectionLabels />
-
-        <!-- <p class="desired-round">
-            <span>
-                {desiredRound}
-            </span>
-            -vs-
-            <span>
-                {game.round}
-            </span>
-        </p> -->
-        
-        <!-- game main -->
-
-        <!-- <div class="div flex" style="position:fixed; bottom: 50px; right: 50px; font-size: 0.65em;"> -->
-            <!-- Player role {playerRole} -->
-            <!-- <pre style="font-size: 0.7em;"> {JSON.stringify(playerCards)} </pre> -->
-            <!-- <pre> {JSON.stringify(hand)} </pre> -->
-            <!-- <pre> {JSON.stringify(hand)} </pre> -->
-        <!-- </div> -->
 
         <div class="game-interactive">
             {#if showRevealRound}
@@ -278,7 +402,7 @@ import { goto } from "$app/navigation";
                 <div class="game-markets">
                     {#each roleKeys as role}
                         <GameRow 
-                            isActivePlayer={playerRole && playerRole === role}
+                            isActivePlayer={playerRole === role}
                             roleData={players[role]}
                             localRates={localRates}
                             suit={role}

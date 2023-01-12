@@ -1,12 +1,24 @@
-import { browser } from "$app/env";
 import { goto } from "$app/navigation";
 import { get } from "svelte/store";
-import { allRoleNames, defaultGamePlayer, emptyHand, emptyReveals, emptySuits, playerRevealRoundsArray, roleKeys } from "./constants";
-import { currentUser, gamePlayers } from "./state";
-import type { AppGamePlayer, AppGamePlayers, GameCard, Holder, SuitName, SuitReveals } from "./types";
+import { allRoleNames, defaultGamePlayer, emptyHand, emptyReveals, emptySuits, gamePhases, playerRevealRoundsArray, roleKeys } from "./constants";
+import { botParams, currentGame, currentUser, gamePlayers } from "./state";
+import type { 
+    AppGamePlayer, 
+    AppGamePlayers, 
+    GameCard, 
+    Holder, 
+    SuitName, 
+    SuitReveals,
+    GameTrade,
+    TradeLedger,
+    GamePhase,
+    AppGame,
+    NumberRange
+} from "./types";
 import fileSaver from 'file-saver'
+import { browser } from "$app/environment";
+import { getGame, getPlayerData } from "./actions";
 const {saveAs} = fileSaver
-
 const DEV = import.meta.env.VITE_DEV
 
 export function Logger(params: any[]){
@@ -25,34 +37,34 @@ export function redirect(path: string){
 // PLAYERS
 
 export const makePlayers: () => AppGamePlayers = () => {
-    let p = {}
-    allRoleNames.forEach((role) => {
+    let p: {[index: string]: any} = {}
+    allRoleNames.forEach((role: string) => {
         p[role] = { ...defaultGamePlayer, role}
     })
     return (p as AppGamePlayers)
 }
 
-export function getRelevantTrades(tradeList, userId, playerRole){
-    return tradeList.filter(trade => {
+export function getRelevantTrades(tradeList: GameTrade[], userId: string, playerRole: string){
+    return tradeList.filter((trade: any) => {
         return trade.actor === userId 
             || trade.market === playerRole
     })
 }
 
-export function calculatePlayerInventory(_trades, targetRole?){
+export function calculatePlayerInventory(_trades: TradeLedger, targetRole?: string){
     let testRole = targetRole
-    let contracts = {...emptyHand}
+    let contracts: {[index: string]: number} = {...emptyHand}
     let balance = 0
-    let tradeMultipliers = {
+    let tradeMultipliers: {[index: string]: number} = {
         buy: 1,
         sell: -1,
     }
-    let balanceMultipliers = {
+    let balanceMultipliers: {[index: string]: number} = {
         buy: -1,
         sell: 1,
     }
 
-    _trades.map((trade) => {
+    _trades.map((trade: any) => {
         // contracts[trade.market] += tradeMultipliers[trade.type]
         contracts[trade.market] += trade.market === testRole ?
             // invert action since player loses contract to buying player and gains from seller
@@ -76,18 +88,21 @@ export function calculatePlayerInventory(_trades, targetRole?){
 export function findGamePlayerById(){
     let user = get(currentUser)
 
-    let player = {
-        user_id: "",
-        email: "",
-        player_name: "",
-        role: "",
-        hand: {...emptyHand},
-        revealed: {...emptyReveals}
-    }
+    // let player: AppGamePlayer = {
+    //     user_id: "",
+    //     // email: "",
+    //     player_name: "",
+    //     role: "",
+    //     hand: {...emptyHand},
+    //     revealed: {...emptyReveals},
+    //     rate_change_log: [],
+    //     bot_action_count: {},
+    // }
+    let player = {...defaultGamePlayer}
     
     if(user.id){
         let players = get(gamePlayers)
-        const assign = (gamePlayer, role) =>  (player = { ...gamePlayer, role })
+        const assign = (gamePlayer: any, role: string) =>  (player = { ...gamePlayer, role })
 
         for(let i = 0; i < allRoleNames.length; i++){
             let role = allRoleNames[i]
@@ -101,7 +116,7 @@ export function findGamePlayerById(){
     else return player
 }
 
-export function makeGamePlayers(params?): AppGamePlayers {
+export function makeGamePlayers(params?: any): AppGamePlayers {
     if(params){
         const {adminRole, adminId, adminName, roleHands, gameId} = params
         return allRoleNames.map(role => ({
@@ -119,10 +134,10 @@ export function makeGamePlayers(params?): AppGamePlayers {
 }
 
 export function makeGamePlayersAsObject(sourceArray?: any){
-    let players = {}
+    let players: {[index: string]: any} = {}
     // let use = sourceArray || allRoleNames
     if(sourceArray){
-        sourceArray.map(player => {
+        sourceArray.map((player: any) => {
             players[player.role] = {...player}
         })
     }
@@ -134,15 +149,42 @@ export function makeGamePlayersAsObject(sourceArray?: any){
     return players
 }
 
+// BOTS
+export function getBotsFromPlayers(players: {[index: string]: AppGamePlayer}){
+    let botPlayers: {[index: string]: AppGamePlayer} = {}
+    for(let player in players){
+        if(players[player].user_id.includes('-bot')){
+            let role = players[player].role
+            botPlayers[role] = players[player]
+        }
+    }
+    return botPlayers
+}
+
 // DECK
 
-function getRandomCard(hand){
+export function getRandomCard(hand: SuitName[]){
     let randomIndex = Math.floor(Math.random() * hand.length)
     return hand.splice(randomIndex, 1)[0]
     // return randomIndex
 }
 
-function removeCardFromTop(deck){
+export function getRandomCardFromHand(hand: {[index: string]: number}){
+    let suits = Object.keys(hand).filter((suit: string, index: number) => {
+        return hand[suit] > 0
+    })
+    let randomSuitIndex = Math.floor(Math.random() * suits.length)
+    let randomSuit = suits[randomSuitIndex]
+    // let newHand = {...hand}
+    // newHand[randomSuit] -= 1
+    return randomSuit
+}
+
+export function getRandomNumberFromRange(range: NumberRange){
+    return Math.floor(Math.random() * (range.max - range.min + 1) + range.min)
+}
+
+function removeCardFromTop(deck: SuitName[]){
     return deck.splice(-1, 1)[0]
 }
 
@@ -163,7 +205,7 @@ export const buildShuffledDeck = () => {
         hand.push(randomCard)
     }
     
-    const roleHands = {
+    const roleHands: {[index: string]: any} = {
         clubs: {...emptyHand},
         diamonds: {...emptyHand},
         hearts: {...emptyHand},
@@ -194,7 +236,7 @@ export const buildShuffledDeck = () => {
 }
 
 export function makeRevealObject(){
-    let reveals = {}
+    let reveals: {[index: string]: any} = {}
 
     playerRevealRoundsArray.forEach(rr => {
         reveals[rr] = {
@@ -208,17 +250,17 @@ export function makeRevealObject(){
     return reveals
 }
 
-export function emailIsValid (email) {
+export function emailIsValid (email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-export function valueWithSymbol(val){
+export function valueWithSymbol(val: number){
     let symbol = val < 0 ? '-' : ''
     let usableValue = divBy100AsString(val)
     return `${symbol}$${usableValue}`
 }
 
-export function divBy100AsString(val){
+export function divBy100AsString(val: number){
     // let stringVal: any = String(val)
     // let append = stringVal[stringVal.length-1] === '0' && stringVal !== '0' ? '0' : ''
     // return `${Math.abs(val/100)}${append}`
@@ -228,7 +270,7 @@ export function divBy100AsString(val){
     return by100
 }
 
-export function getReveals(ps, game): SuitReveals{
+export function getReveals(ps: any, game: any): SuitReveals{
     let reveals = {...emptySuits}
 
     roleKeys.map((role) => {
@@ -239,15 +281,15 @@ export function getReveals(ps, game): SuitReveals{
     return reveals
 }
 
-export function hasAll(state){
+export function hasAll(state: any){
     return state.clubs
         && state.diamonds
         && state.hearts
         && state.spades
 }
 
-export function parseArchives(list){
-    return list.map(arch => {
+export function parseArchives(list: any[]){
+    return list.map((arch: any) => {
         let mapped = {
             ...arch,
             players: arch.players.data,
@@ -260,12 +302,12 @@ export function parseArchives(list){
     })
 }
 
-export let getTime = (date) => {
+export let getTime = (date: any) => {
     let d = new Date(date)
     return `${d.getHours()}:${d.getMinutes()}:${d.getMilliseconds()}`
 }
 
-export let getDate = (date) => {
+export let getDate = (date: any) => {
     let d = new Date(date)
     return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`
 }
@@ -274,4 +316,73 @@ export let makeCSV = (game_id: string, type: string, csvData: string) => {
     let fileName = `icbs_derivatives_${game_id}_${type}.csv`
     let blob = new Blob([csvData], {type: 'text/plain;charset=utf8'})
     saveAs(blob, fileName)
+}
+
+export const extractGamePhase = (_game?: AppGame) => {
+    let game = _game || get(currentGame)
+    let params = get(botParams)
+    let phase: GamePhase = 'early'
+    let isMidGame = game.round >= params.mid_game_start_round && game.round < params.late_game_start_round 
+    let isLateGame = game.round >= params.late_game_start_round && game.round < params.end_game_start_round 
+    let isEndGame = game.round >= params.end_game_start_round
+
+    isMidGame && (phase = gamePhases[1])
+    isLateGame && (phase = gamePhases[2])
+    isEndGame && (phase = gamePhases[3])
+    return phase
+}
+
+export const getBotParamFrequency = (game?: AppGame) => {
+    let phase = extractGamePhase(game)
+    let params = get(botParams)
+    let freq = 3500
+    let frequencies = {
+        early: params.early_game_frequency,
+        mid: params.mid_game_frequency,
+        late: params.late_game_frequency,
+        end: params.end_game_frequency,
+    }
+
+    freq = frequencies[phase]
+
+    return freq
+}
+
+// really only calculates the likelihood of something being revealed
+export async function calculateMostRevealed(game: AppGame){
+    // get remote game 
+    // let last = ''
+    let {data: thisGame} = await getGame( get(currentGame).game_id )
+    let {data: players} = await getPlayerData( get(currentGame).game_id )
+    // Logger(['got players: ', players])
+    // extract deck
+    if(!thisGame || !players || (players && players.length === 0)){
+        return {orderedSuits: [], cardCount: {...emptyHand}}
+    }
+
+    let deck = thisGame.deck
+    let cardCount = {...emptyHand}
+    // deck.held.forEach((card: SuitName) => cardCount[card] += 1)
+    deck.revealed.forEach((card: SuitName) => cardCount[card] += 1)
+    const suitPlayers = players
+        .filter((player: AppGamePlayer) => !player.role.includes('speculator'))
+
+    suitPlayers.forEach((player: AppGamePlayer) => {
+            for(let revealed in player.revealed){
+                let suitName = (player.revealed as any)[revealed] as SuitName
+                suitName && (cardCount[suitName] += 1)
+            }
+        })
+    Logger(['got suit commanding players: ', suitPlayers])
+
+    // let most: SuitName = 'clubs'
+    Logger(['card count is: ', cardCount])
+    let suitNames = Object.keys(cardCount) as SuitName[]
+    let orderedSuits = [...suitNames].sort((suitA: SuitName, suitB: SuitName) => {
+        if(cardCount[suitA] > cardCount[suitB]) return -1
+        else if(cardCount[suitA] < cardCount[suitB]) return 1
+        else return 0
+    })
+    Logger(['sorted suit names: ', orderedSuits])
+    return {orderedSuits, cardCount}
 }

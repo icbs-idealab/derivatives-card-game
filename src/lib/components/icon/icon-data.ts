@@ -59,4 +59,5 @@ export const icons = {
     dollar: '<path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M16.7 8a3 3 0 0 0 -2.7 -2h-4a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6h-4a3 3 0 0 1 -2.7 -2"></path><path d="M12 3v3m0 12v3"></path>',
     list: '<path stroke="none" d="M0 0h24v24H0z"/><path d="M9 6L20 6"/><path d="M9 12L20 12"/><path d="M9 18L20 18"/><path d="M5 6L5 6.01"/><path d="M5 12L5 12.01"/><path d="M5 18L5 18.01"/>',
     refresh: '<path stroke="none" d="M0 0h24v24H0z"/><path d="M20 11a8.1 8.1 0 00-15.5-2m-.5-4v4h4M4 13a8.1 8.1 0 0015.5 2m.5 4v-4h-4"/>',
+    bot: `<path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M7 7h10a2 2 0 0 1 2 2v1l1 1v3l-1 1v3a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-3l-1 -1v-3l1 -1v-1a2 2 0 0 1 2 -2z"></path><path d="M10 16h4"></path><circle cx="8.5" cy="11.5" r=".5" fill="currentColor"></circle><circle cx="15.5" cy="11.5" r=".5" fill="currentColor"></circle><path d="M9 7l-1 -4"></path><path d="M15 7l1 -4"></path>`
   };
