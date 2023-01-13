@@ -15,6 +15,7 @@
         'winger.shane@gmail.com',
         'shane@fulcrum.house',
         'p.tulip@imperial.ac.uk',
+        `s.sundaresan@imperial.ac.uk`,
     ]
     let localUser = null as any
     // currentUser.subscribe((newUser) => {
