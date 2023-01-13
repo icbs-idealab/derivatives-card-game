@@ -2,7 +2,7 @@
   import Icon from "../icon/icon.svelte";
   export let type = "default";
   export let label = "";
-  export let action;
+  export let action: (...props: any) => any;
   export let disabled: boolean = false;
   export let icon = '';
   export let active: boolean = false

@@ -103,8 +103,8 @@
     }
 
     .trade-attribute {
-        word-wrap: break-word;
-        white-space: pre-wrap;
+        word-wrap: nowrap;
+        white-space: nowrap;
         overflow-x: scroll;
         padding: 5px;
         border-right: solid thin lightgray;
@@ -137,7 +137,7 @@
         overflow-y: scroll;
         min-height: calc(100% - 90px - 40px);
         position: relative;
-        top: 40px;
+        /* top: 40px; */
         padding-bottom: 40px;
         height: 100%;
     }

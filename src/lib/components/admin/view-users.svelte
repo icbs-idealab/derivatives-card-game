@@ -5,7 +5,6 @@
     import {nanoid} from 'nanoid'
     import { emailIsValid, Logger } from "$lib/helpers";
     import { createUser, setLoadingModal, setShowAppMessage, showMessage } from "$lib/actions";
-    import Papa from 'papaparse'
     import { onDestroy, onMount } from "svelte";
     import { browser } from "$app/environment";
 
@@ -21,7 +20,7 @@
         console.log('selecting file: ', e)
         if(e.target.files && e.target.files.length){
             console.log('target file: ', e.target.files[0])
-            let f = Papa.parse(e.target.files[0], {complete: (res) => {
+            let f = (globalThis as any).Papa.parse(e.target.files[0], {complete: (res) => {
 
                 console.log('result: ', res)
                 let newList = []

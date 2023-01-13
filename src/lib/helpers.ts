@@ -21,6 +21,7 @@ import { getGame, getPlayerData } from "./actions";
 const {saveAs} = fileSaver
 const DEV = import.meta.env.VITE_DEV
 
+
 export function Logger(params: any[]){
     // check env function
     if(DEV === "true" || DEV === true || ( typeof params[0] === 'string' && params[0].startsWith('err')) ){
@@ -312,10 +313,12 @@ export let getDate = (date: any) => {
     return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`
 }
 
-export let makeCSV = (game_id: string, type: string, csvData: string) => {
-    let fileName = `icbs_derivatives_${game_id}_${type}.csv`
-    let blob = new Blob([csvData], {type: 'text/plain;charset=utf8'})
-    saveAs(blob, fileName)
+export let makeCSV = async (game_id: string, type: string, csvData: string) => {
+    return new Promise(async (resolve) => {
+        let fileName = `icbs_derivatives_${game_id}_${type}.csv`
+        let blob = new Blob([csvData], {type: 'text/plain;charset=utf8'})
+        resolve(saveAs(blob, fileName))
+    })
 }
 
 export const extractGamePhase = (_game?: AppGame) => {

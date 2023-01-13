@@ -72,6 +72,8 @@ export const getAuthenticatedUser = async () => {
         meta: user && user.user_metadata,
     }
 
+    Logger(['USER DATA: ', user, a, b])
+
     let isDifferent = JSON.stringify(a) !== JSON.stringify(b)
     
     // Logger(['User A: ', a])
@@ -222,16 +224,17 @@ export const revealPlayerCard = async (newPlayerData: any, game_id: string, user
 }
 
 export const updatePlayerPrices = async (newPrices: {buy: number, sell: number}) => {
-    let game_id = get(currentGame).game_id
+    let game = get(currentGame)
+    let game_id = game.game_id
     let user_id = get(currentUser).id
     // get players and filter by id
-    let players = get(gamePlayers)
     let thisPlayer = findGamePlayerById()
     let currentChangeLog = thisPlayer.rate_change_log
 
     let newLog: RateChangeLog = {
         ...newPrices,
-        time: Date.now()
+        time: Date.now(),
+        round: game.round
     }
 
     currentChangeLog.push(newLog)
@@ -462,10 +465,10 @@ function adjustBotRates(rates: BotRates, index: number, gamePhase: GamePhase){
     return rates
 }
 
-function calculateBestRate(orderedSuits: SuitName[], botRates: {buy: number, sell: number}, botSuit: SuitName, gamePhase: GamePhase)
+function calculateBestRate(orderedSuits: SuitName[], botRates: {buy: number, sell: number}, botSuit: SuitName, gamePhase: GamePhase, game: AppGame)
 :{buy: number, sell: number} {
     // look at most revealed cards
-    let newRates: BotRates = {...botRates}
+    let newRates: BotRates = {...botRates, round: game.round}
     // increase bid/sell rate if own suit unlikely to be last or unlikely to be targeted by other players (is last or second last in terms of frequency)
     // otherwise increase ask rate
     let index = orderedSuits.indexOf(botSuit)
@@ -496,7 +499,8 @@ export async function performBotActions(bots: AppGamePlayersByRole){
             orderedSuits, 
             {buy: bots[bot].buy, sell: bots[bot].sell},
             bots[bot].role as SuitName,
-            gamePhase
+            gamePhase,
+            game
         )
 
         Logger(['calculated best rates: ', calculatedRates])
@@ -1335,6 +1339,67 @@ export async function processTrade({market, type, value}: any){
 
 }
 
+// PRICE CHANGE LOG
+
+function parseLogTime(timestamp: number){
+    let date = new Date(timestamp)
+    let time: {
+        [index: string]: number | string
+        // day?: number | string
+        // month?: number | string
+        // year?: number | string
+        // hour?: number | string
+        // minute?: number | string
+        // second?: number | string
+    } = {
+        day: date.getDate(),
+        month: date.getUTCMonth() + 1,
+        year: parseInt(String(date.getFullYear()).substring(2)),
+        hour: date.getHours(),
+        minute: date.getMinutes(),
+        second: date.getMinutes(),
+    }
+
+    return time
+}
+
+export async function getPriceChangeLogs(game_id: string){
+
+    const {data, error} = await supabase
+        .from('game-players')
+        .select("*")
+        .eq("game_id", game_id)
+
+    if(error){
+        Logger(['error getting price change logs: ', error])
+        // let parsedData = []
+
+        return {data, error, success: false} 
+    }
+    else {
+        Logger(['Got Price Change Log: ', data])
+        let beforeParsed: any[] = []
+        data.forEach(player => {
+            let pLog = [...player.rate_change_log]
+            
+            beforeParsed.push(...pLog.map((item) => {
+                return {
+                    ...item,
+                    parsedTime: parseLogTime(item.time),
+                    player_id: player.user_id,
+                    player_name: player.player_name,
+                    role: player.role
+                }
+            }))
+        })
+
+        let parsed: any[] = beforeParsed.sort((a: any, b: any) => {
+            return a.time > b.time ? 1 : -1
+        })
+
+        return {data: parsed, error, success: true}
+    }
+}
 // TRADES
 
 export async function getTrades(game_id: string){

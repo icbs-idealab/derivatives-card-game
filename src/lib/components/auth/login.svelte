@@ -6,7 +6,7 @@
     import { appErrors } from "$lib/state";
     import { setLoadingModal, updateActiveUser } from "$lib/actions";
     import Icon from "../icon/icon.svelte";
-    import { redirect } from "$lib/helpers";
+    import { Logger, redirect } from "$lib/helpers";
     export let email: string = ''
     export let password: string = ''
     export let updateEmail = (value: string) => {}
@@ -33,7 +33,7 @@
             
             let signedIn = await onSubmit({email, password})
             
-            // console.log('result of sign in...: ', signedIn)
+            Logger(['result of sign in...: ', signedIn])
 
             if(signedIn.error){
                 const ers: AppErrors = [{

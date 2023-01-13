@@ -139,10 +139,24 @@ export interface AppGamePlayer {
     rate_change_log: RateChangeLog[]
 }
 
+export interface ParsedRateChangeLogTime {
+    day: number | string
+    month: number | string
+    year: number | string
+    hour: number | string
+    minute: number | string
+    second: number | string
+}
+
 export interface RateChangeLog {
     buy: number
     sell: number
-    time: number
+    time: number 
+    parsedTime?: ParsedRateChangeLogTime
+    role?: SuitName
+    round?: number
+    player_id?: string
+    player_name?: string
 }
 
 
@@ -383,6 +397,7 @@ export interface BotRateAdjustments {
 export interface BotRates {
     buy: number
     sell: number
+    round?: number
 }
 
 export interface BotParams {
@@ -417,3 +432,26 @@ export interface BotTradeData {
     type: string
     price: number
 }
+
+export interface AdminControlButtonsFn {
+    action: (...props: any) => any
+    disabled?: boolean
+}
+export interface AdminControlButtonsWoIcon extends AdminControlButtonsFn {
+    label: string
+}
+
+export interface AdminControlButtonsWoLabel extends AdminControlButtonsFn {
+    icon: string
+}
+
+type Only<T, U> = {
+    [P in keyof T]: T[P];
+  } & {
+    [P in keyof U]?: never;
+  };
+  
+type Either<T, U> = Only<T, U> | Only<U, T>;
+  
+// export type AdminControlButton = AdminControlButtonsWoIcon | AdminControlButtonsWoLabel | (AdminControlButtonsWoIcon & AdminControlButtonsWoLabel)
+export type AdminControlButton = Either<AdminControlButtonsWoIcon | AdminControlButtonsWoLabel>

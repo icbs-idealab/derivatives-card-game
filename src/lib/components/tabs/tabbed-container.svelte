@@ -1,13 +1,15 @@
 <div class="tabbed-container">
     <div class="tab-buttons">
-        {#each tabButtons as tabButton}
-            <Button 
-                type="tab" 
-                label={tabButton.label} 
-                action={tabButton.action} 
-                active={tabButton.active}
-            />
-        {/each}
+        {#if tabButtons}
+            {#each tabButtons as tabButton}
+                <Button 
+                    type="tab" 
+                    label={tabButton.label} 
+                    action={tabButton.action} 
+                    active={tabButton.active}
+                />
+            {/each}
+        {/if}
     </div>
     <div class="tab-output">
         <div 

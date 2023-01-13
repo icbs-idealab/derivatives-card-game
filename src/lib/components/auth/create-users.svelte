@@ -1,3 +1,12 @@
+<svelte:head>
+    <script 
+        src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"
+        integrity="sha512-SGWgwwRA8xZgEoKiex3UubkSkV1zSE1BS6O4pXcaxcNtUlQsOmOmhVnDwIvqGRfEmuz83tIGL13cXMZn6upPyg=="
+        crossorigin="anonymous" 
+        referrerpolicy="no-referrer">
+    </script>
+</svelte:head>
+
 <script lang="ts">
     import Icon from "$lib/components/icon/icon.svelte";
     import TextInput from "$lib/components/input/text-input.svelte";
@@ -5,10 +14,8 @@
     import {nanoid} from 'nanoid'
     import { emailIsValid, Logger } from "$lib/helpers";
     import { createUser, getUserList, setLoadingModal, setShowAppMessage, showMessage } from "$lib/actions";
-    import Papa from 'papaparse'
     import { onDestroy, onMount } from "svelte";
     import { browser } from "$app/environment";
-
     let list = [createNewUserInput()]
     let submitting = false
     let submitted = false
@@ -92,7 +99,7 @@
         console.log('selecting file: ', e)
         if(e.target.files && e.target.files.length){
             console.log('target file: ', e.target.files[0])
-            let f = Papa.parse(e.target.files[0], {complete: (res) => {
+            let f = (globalThis as any).Papa.parse(e.target.files[0], {complete: (res) => {
 
                 console.log('result: ', res)
                 let newList = []
@@ -201,8 +208,9 @@
 
     }
 
-    onMount(() => {
-        browser && document.addEventListener('keydown', returnKeyHandler, false)
+    onMount( async() => {
+        browser && document.addEventListener('keydown', returnKeyHandler, false);
+        Logger(['global papa: ', globalThis])
     })
     onDestroy(() => {
         browser && document.removeEventListener('keydown', returnKeyHandler, false)
