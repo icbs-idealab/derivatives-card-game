@@ -9,7 +9,7 @@ export default async function handler(request, response) {
     const req = JSON.parse(request.body);
     const {email} = req
 
-    const {data, error} = await supabase.auth.api.resetPasswordForEmail(email)
+    const {data, error} = await supabase.auth.resetPasswordForEmail(email)
     console.log('result of sending reset email: ', data)
     console.log('error of sending reset email: ', error)
     !error && data && response.status(200).send(JSON.stringify({success: !error, email}));

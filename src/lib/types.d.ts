@@ -1,5 +1,12 @@
 import type { RealtimeChannel } from "@supabase/supabase-js"
 
+// INBUILT
+
+// svelte.JSX.ChangeEventHandler<HTMLInputElement>
+
+
+// MY TYPES
+
 export type SuitName = 'clubs' | 'diamonds' | 'hearts' | 'spades'
 export type SpeculatorRoles = 'speculator1' | 'speculator2' | 'speculator3' | 'speculator4' | 'speculator5' | 'speculator6'
 export type PlayerRole = SuitName | SpeculatorRoles | 'guest' | ""
@@ -455,3 +462,10 @@ type Either<T, U> = Only<T, U> | Only<U, T>;
   
 // export type AdminControlButton = AdminControlButtonsWoIcon | AdminControlButtonsWoLabel | (AdminControlButtonsWoIcon & AdminControlButtonsWoLabel)
 export type AdminControlButton = Either<AdminControlButtonsWoIcon | AdminControlButtonsWoLabel>
+
+//
+
+export interface TextInputEvent extends Event {
+    currentTarget: HTMLInputElement
+    target: HTMLInputElement
+}
