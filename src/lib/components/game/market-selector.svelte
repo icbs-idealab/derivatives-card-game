@@ -2,7 +2,11 @@
     <div class="markets">
         {#each markets as market}
             <ClickWrapper handler={() => select(market)}>
-                <MarketButton name={market.name} active={market.name === selected.name} />
+                <MarketButton 
+                    name={market.name} 
+                    active={market.name === selected.name} 
+                    symbol={market.icon}    
+                />
             </ClickWrapper>
         {/each}
     </div>
@@ -27,7 +31,7 @@
         },
         {
             name: 'diamonds',
-            icon: '&diamonds'
+            icon: '&diams'
         },
         {
             name: 'hearts',

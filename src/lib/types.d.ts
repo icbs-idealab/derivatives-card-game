@@ -11,7 +11,7 @@ export type SuitName = 'clubs' | 'diamonds' | 'hearts' | 'spades'
 export type SpeculatorRoles = 'speculator1' | 'speculator2' | 'speculator3' | 'speculator4' | 'speculator5' | 'speculator6'
 export type PlayerRole = SuitName | SpeculatorRoles | 'guest' | ""
 
-export type SuitSymbol = '&clubs' | '&diamonds' | '&hearts' | '&spades' | '&#128065' | '&#129300' | '&#128540'
+export type SuitSymbol = '&clubs' | '&diamonds' | '&diams' | '&hearts' | '&spades' | '&#128065' | '&#129300' | '&#128540'
 
 export interface JoinGameParameters {
     playerName: string

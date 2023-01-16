@@ -1121,10 +1121,10 @@ export const endGame = async () => {
         }
     
         let archiveResult = await archiveGame(archive)
-        // let deletePlayersResult = await deletePlayers(game.game_id)
-        let deletePlayersResult = {success: true, temp: true}
-        // let deleteTradesResult = await deleteTrades(game.game_id)
-        let deleteTradesResult = {success: true, temp: true}
+        let deletePlayersResult = await deletePlayers(game.game_id)
+        // let deletePlayersResult = {success: true, temp: true}
+        let deleteTradesResult = await deleteTrades(game.game_id)
+        // let deleteTradesResult = {success: true, temp: true}
         let updateResult = await updateGame({ended: true})
         return {meta: updateResult, players: deletePlayersResult, archiveResult, trades: deleteTradesResult}
     }
