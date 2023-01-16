@@ -35,7 +35,7 @@
             
             Logger(['result of sign in...: ', signedIn])
 
-            if(signedIn.error){
+            if(signedIn && signedIn.error){
                 const ers: AppErrors = [{
                     message: signedIn.error.message,
                     code: signedIn.error.status,

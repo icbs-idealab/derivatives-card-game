@@ -51,7 +51,7 @@
             Logger(['handling login: ', email, ' ', password])
             const newUser = await signIn(email, password)
             Logger(['new user is: ', newUser])
-            // return newUser
+            return newUser
         }
         else {
             // handle request submission
@@ -60,6 +60,7 @@
             if(data.user && data.user.email){
                 showSignUpSuccessMessageWithEmail.set(data.user.email)
             }
+            return {data, error}
         }
     }
 
