@@ -195,7 +195,7 @@
                     Logger(['$$pwd will show password updater'])
                     Logger(['$$was auth checked? ', $authChecked])
                     $authChecked && !$showPasswordUpdater && redirect('/update-password')
-                    Logger(['$$SPWU ', $showPasswordUpdater])
+                    Logger(['$$PSWU ', $showPasswordUpdater])
                 }
                 else{
                     $authChecked && $showPasswordUpdater && showPasswordUpdater.set(false)

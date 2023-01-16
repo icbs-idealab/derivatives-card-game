@@ -243,3 +243,22 @@ export function getDefaultBotTrade(){
         price: 0,    
     } as BotTradeData
 }
+
+
+export const PROD_URL = 'https://icbscardgame.online'
+export const DEV_URL = 'http://localhost:5173'
+export const APP_URL = getAppUrl()
+export const PASSWORD_UPDATE_PATH = 'update-password'
+export const APP_REDIRECT_URL = `${APP_URL}/${PASSWORD_UPDATE_PATH}`
+
+function getAppUrl(){
+    if(globalThis && globalThis.location){
+        return globalThis.location.href.includes('localhost') ?
+            DEV_URL
+            : PROD_URL
+    }
+    else {
+        return DEV_URL
+    }
+}
+

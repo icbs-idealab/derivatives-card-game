@@ -1,9 +1,10 @@
 <script lang="ts">
     import Button from "$lib/components/button/button.svelte";
     import TextInput from "$lib/components/input/text-input.svelte";
-    import { setLoadingModal } from "$lib/actions";
+    import { resetUserPasswordViaEmail, setLoadingModal } from "$lib/actions";
     import type { AppError } from "$lib/types";
     import { redirect } from "$lib/helpers";
+    import { showLoadingModal } from "$lib/state";
     let email: string = ''
 
     let success = false
@@ -38,6 +39,27 @@
         }
     }
 
+    async function submitPasswordReset(){
+        showLoadingModal.set(true)
+
+        const {data, error} = await resetUserPasswordViaEmail(email)
+
+        !error && handleSuccess()
+        error && handleError(error)
+    }
+
+    function handleSuccess(){
+        success = true
+        showLoadingModal.set(false)
+    }
+
+    function handleError(err: any){
+        error = {
+            code: err.code,
+            message: err.message
+        }
+    }
+
     function retry(){
         error = null
         success = false
@@ -54,7 +76,7 @@
             </div>
             <TextInput value={email} onUpdate={onUpdateEmail} placeholder="Enter your email" />
             <div class="button-container">
-                <Button type="proceed" label="Reset" action={submit} />
+                <Button type="proceed" label="Reset" action={submitPasswordReset} />
             </div>
         {:else if success}
             <div class="title flex fd-col jc-start">
@@ -62,8 +84,8 @@
                 <p>Please check your inbox for further instructions.</p>
                 <div class="button-container">
                     <Button 
-                        label="Retry"
-                        action={() => redirect('/')}
+                        label="OK"
+                        action={retry}
                     />
                 </div>    
             </div>

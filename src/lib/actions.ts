@@ -1,6 +1,6 @@
 import { supabase } from "$lib/backend"
 import { get } from "svelte/store"
-import { allRoleNames, defaultBotTradeData, defaultGame, defaultUser, getDefaultBotTrade, playerRevealRounds, roleKeys } from "./constants"
+import { allRoleNames, APP_REDIRECT_URL, APP_URL, defaultBotTradeData, defaultGame, defaultUser, getDefaultBotTrade, playerRevealRounds, roleKeys } from "./constants"
 import { buildShuffledDeck, calculateMostRevealed, extractGamePhase, findGamePlayerById, getRandomNumberFromRange, Logger, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
 import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked, showAppMessage, playersChecked, gameChecked, tradesChecked, botParams, gamePhase, appErrors } from "./state"
@@ -49,9 +49,14 @@ export const createUser = async (email: string) => {
 export const resetUser = () => currentUser.update(() => ({...defaultUser}))
 
 
-// export const resetUserPasswordViaEmail = (email: string) => {
+export const resetUserPasswordViaEmail = async (email: string) => {
+    // const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    return await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: APP_REDIRECT_URL
+    })
+    // return {data, error}
+}
 
-// }
 // cannot subscribe to supabase users so will rely on calling this function whenever the _layout component is mounted to check for authenticated users
 
 export const getAuthenticatedUser = async () => {
