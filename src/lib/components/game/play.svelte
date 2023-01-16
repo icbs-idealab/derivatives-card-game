@@ -259,30 +259,30 @@
                 'Game Ended'
                 : '' as GameEndState
 
-    function calcHandFromReveals(playerHandData: any){
-        Logger(['Calculating hand!'])
-        let {hand} = playerHandData
-        return hand
-    }
-
     // function calcHandFromReveals(playerHandData: any){
     //     Logger(['Calculating hand!'])
-    //     let {hand, revealed} = playerHandData
-    //     if(hand && revealed){
-    //         let usableHand: CardHand = {...hand}
-            
-    //         for(let round in revealed){
-    //             let revealedCard: SuitName = revealed[round]
-    //             if(revealedCard){
-    //                 usableHand[ revealedCard ] -= 1
-    //             }
-    //         }
-    //         return usableHand
-    //     }
-    //     else {
-    //         return emptyHand
-    //     }
+    //     let {hand} = playerHandData
+    //     return hand
     // }
+
+    function calcHandFromReveals(playerHandData: any){
+        Logger(['Calculating hand!'])
+        let {hand, revealed} = playerHandData
+        if(hand && revealed){
+            let usableHand: CardHand = {...hand}
+            
+            for(let round in revealed){
+                let revealedCard: SuitName = revealed[round]
+                if(revealedCard){
+                    usableHand[ revealedCard ] -= 1
+                }
+            }
+            return usableHand
+        }
+        else {
+            return emptyHand
+        }
+    }
 
     let processingCardSelection = false
     let selectedCard = ''
