@@ -3,7 +3,7 @@ import { get } from "svelte/store"
 import { allRoleNames, APP_REDIRECT_URL, APP_URL, defaultBotTradeData, defaultGame, defaultUser, getDefaultBotTrade, playerRevealRounds, roleKeys } from "./constants"
 import { buildShuffledDeck, calculateMostRevealed, extractGamePhase, findGamePlayerById, getRandomNumberFromRange, Logger, makeGamePlayers, redirect } from "./helpers"
 import type { UserMetaDataValues } from "./new-types"
-import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked, showAppMessage, playersChecked, gameChecked, tradesChecked, botParams, gamePhase, appErrors } from "./state"
+import { serverSubscriptions, currentGame, currentUser, showLoadingModal, showGameRules, showErrorReporter, gamePlayers, lobbyRequirements, lobby, gameTrades, canTrade, reloadAfterRedirect, appMessage, noSuchGame, authChecked, showAppMessage, playersChecked, gameChecked, tradesChecked, botParams, gamePhase, appErrors, gameIsEnding } from "./state"
 import type { AppGame, 
     AppGamePlayer, 
     AppGamePlayers, 
@@ -1087,10 +1087,10 @@ export async function archiveGame(archiveData: any){
 }
 
 export const endGame = async () => {
-    setLoadingModal(true)
     let game = get(currentGame)
-    
     if(game.game_id){
+        gameIsEnding.set(true)
+
         // archive
         let {data: gameData} = await getGame(game.game_id)
         let playerData = await getPlayerData(game.game_id)

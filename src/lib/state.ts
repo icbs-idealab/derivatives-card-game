@@ -169,3 +169,5 @@ function onBotSubscribe(){
 export const botParams = writable(defaultBotParams, onBotSubscribe)
 
 export const gamePhase = writable(gamePhases[0])
+
+export const gameIsEnding = writable(false)

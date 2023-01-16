@@ -55,7 +55,7 @@
 
 <script lang="ts">
     import { endGame, setLoadingModal } from "$lib/actions";
-import { Logger } from "$lib/helpers";
+    import { Logger } from "$lib/helpers";
     import { showEndGameModal } from "$lib/state";
     import Backdrop from "./backdrop.svelte";
     function abort(){

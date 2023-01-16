@@ -154,7 +154,7 @@ export function makeGamePlayersAsObject(sourceArray?: any){
 export function getBotsFromPlayers(players: {[index: string]: AppGamePlayer}){
     let botPlayers: {[index: string]: AppGamePlayer} = {}
     for(let player in players){
-        if(players[player].user_id.includes('-bot')){
+        if(players[player] && players[player].user_id && players[player].user_id.includes('-bot')){
             let role = players[player].role
             botPlayers[role] = players[player]
         }

@@ -3,7 +3,7 @@
     import { getBotParams, getTrades, revealPlayerCard, performBotActions, updateBotsInCloud } from "$lib/actions";
     import { defaultGame, emptyHand, emptyReveals, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
     import { calculatePlayerInventory, getBotParamFrequency, getBotsFromPlayers, getRandomCardFromHand, getRelevantTrades, Logger, makeGamePlayersAsObject, valueWithSymbol } from "$lib/helpers";
-    import { botParams, currentGame, currentUser, gamePhase, gamePlayers, gameTrades } from "$lib/state";
+    import { botParams, currentGame, currentUser, gameIsEnding, gamePhase, gamePlayers, gameTrades } from "$lib/state";
     import type { AppGame, 
         GameEndState, 
         CardHand, 
@@ -173,7 +173,11 @@
         // determine which action makes most sense for bot to take given the current round
         // only runs when showRevealRound is false
         Logger(['CalculatingBotAction()'])
-        if(calculatingBotAction){ 
+        if($gameIsEnding){
+            clearCalcTimeout()
+            return null
+        }
+        else if(calculatingBotAction){ 
             return null 
         }
         else if($currentGame.started) {
