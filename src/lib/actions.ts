@@ -234,7 +234,17 @@ export const updatePlayerPrices = async (newPrices: {buy: number, sell: number})
     let user_id = get(currentUser).id
     // get players and filter by id
     let thisPlayer = findGamePlayerById()
-    let currentChangeLog = thisPlayer.rate_change_log
+    Logger(['current rate: this player is: ', thisPlayer])
+
+    let currentChangeLog = thisPlayer.rate_change_log 
+
+    Logger(['current rate change log: ', currentChangeLog])
+
+    if(!currentChangeLog){
+        Logger(['No current rate change log!'])
+        currentChangeLog = []
+    }
+
 
     let newLog: RateChangeLog = {
         ...newPrices,
@@ -245,7 +255,7 @@ export const updatePlayerPrices = async (newPrices: {buy: number, sell: number})
     currentChangeLog.push(newLog)
 
     let newPlayerData = {
-        rate_change_log: newLog,
+        rate_change_log: currentChangeLog,
         ...newPrices
     } 
     
