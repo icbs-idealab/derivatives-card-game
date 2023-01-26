@@ -1020,6 +1020,7 @@ export async function updateGame(updateValue: Partial<AppGame>){
             .from(`games`)
             .update(updateValue)
             .eq('game_id', game_id)
+            .select()
 
         if(!error){
             Logger(['successfully updated game: ', data])

@@ -6,7 +6,7 @@
     import { allRoleNames, emptyHand, emptyReveals, emptySuits, emptySuitsBool, playerRevealRounds, roleKeys } from "$lib/constants";
     import { getRelevantTrades, getReveals, hasAll, Logger, makeGamePlayersAsObject } from "$lib/helpers";
     import { currentGame, currentUser, gamePlayers, gameTrades, noSuchGame, serverSubscriptions } from "$lib/state";
-    import type { AppGame, AppGamePlayer, AppGamePlayers, AppGamePlayersByRole, FinalScore, SuitName, SuitReveals } from "$lib/types";
+    import type { AppGame, AppGamePlayer, AppGamePlayers, AppGamePlayersByRole, FinalScore, SuitName, SuitReveals, SupabaseUser } from "$lib/types";
     import { afterUpdate, onMount } from "svelte";
     import { get } from "svelte/store";
     let exists = false
@@ -24,7 +24,8 @@
     let showGameRound = false
     $:playable = haveRequiredRoles && exists
     let playerRole = ''
-    let currentPlayer: AppGamePlayer = get(currentUser)
+    // let currentPlayer: AppGamePlayer = get(currentUser)
+    let currentPlayer: SupabaseUser = get(currentUser)
     let balance = 0
     let revealRoundIntervalCheck: any = null
 
@@ -285,15 +286,15 @@
         
         let {data, error} = await nextRound(true)
 
-        Logger(['$$$: end: ', data])
-        Logger(['$$$: end: ', error])
+        Logger(['$$$: end data: ', data])
+        Logger(['$$$: end error: ', error])
 
         if(data && Array.isArray(data)){
             await finalAction(data[0])
             await archiveFinishedGame()
         }
         else {}
-        // setLoadingModal(false)
+        setLoadingModal(false)
     }
 
     currentGame.subscribe((newGame: AppGame) => {
