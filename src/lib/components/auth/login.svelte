@@ -11,6 +11,7 @@
     export let password: string = ''
     export let updateEmail = (value: string) => {}
     export let updatePassword = (value: string) => {}
+    export let disableSubmit = false
 
     function onUpdateEmail({target}: any){ 
         updateEmail(target.value)
@@ -63,7 +64,7 @@
     <PasswordInput value={password} onUpdate={onUpdatePassword} placeholder="Enter your password" />
     
     <div class="button-container">
-        <Button type="proceed" label="Log-in" action={submit} />
+        <Button type="proceed" label="Log-in" action={submit} disabled={disableSubmit} />
     </div>
 
     <div class="button-container">

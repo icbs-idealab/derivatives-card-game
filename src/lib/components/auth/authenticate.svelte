@@ -14,6 +14,9 @@
     // import { browser } $app.environment;
     // import { goto } from "$app/navigation";
     // vars
+    let disableLoginSubmit = false
+    let disableSignUpSubmit = false
+
     $:email = '' as string
     $:password = '' as string
     $:signUpPassword = '' as string
@@ -47,19 +50,23 @@
     const submit = async ({email, password, message}: any) => {
         Logger(['async submit'])
         if(show === 'login'){
+            disableLoginSubmit = true
             // handle log-in submission
             Logger(['handling login: ', email, ' ', password])
             const newUser = await signIn(email, password)
             Logger(['new user is: ', newUser])
+            disableLoginSubmit = false
             return newUser
         }
         else {
             // handle request submission
+            disableSignUpSubmit = true
             Logger(['handling request: ', email, ' / ', signUpPassword])
             const {data, error} = await signUp(email, signUpPassword)
             if(data.user && data.user.email){
                 showSignUpSuccessMessageWithEmail.set(data.user.email)
             }
+            disableSignUpSubmit = false
             return {data, error}
         }
     }
@@ -86,8 +93,22 @@
 
 <TabbedContainer tabButtons={tabButtons}>
     {#if show === 'login'}
-        <Login onSubmit={submit} email={email} password={password} updateEmail={updateEmail} updatePassword={updatePassword} />
+        <Login
+            onSubmit={submit}
+            email={email}
+            password={password}
+            updateEmail={updateEmail}
+            updatePassword={updatePassword} 
+            disableSubmit={disableLoginSubmit}
+        />
     {:else}
-        <Signup onSubmit={submit} email={email} password={signUpPassword} updateEmail={updateEmail} updatePassword={updateSignUpPassword} />
+        <Signup
+            onSubmit={submit}
+            email={email}
+            password={signUpPassword}
+            updateEmail={updateEmail}
+            updatePassword={updateSignUpPassword}
+            disableSubmit={disableSignUpSubmit}
+        />
     {/if}
 </TabbedContainer>
