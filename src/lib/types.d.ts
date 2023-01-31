@@ -144,6 +144,7 @@ export interface AppGamePlayer {
     is_admin: boolean
     bot_action_count?: ActionCount
     rate_change_log: RateChangeLog[]
+    
 }
 
 export interface ParsedRateChangeLogTime {

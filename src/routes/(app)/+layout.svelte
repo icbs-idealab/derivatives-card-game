@@ -187,24 +187,24 @@
             Logger([`<_layout> detected a user change: `, userUpdate])
             // processNewUserData(userUpdate, isSame)
 
-            if(userUpdate.id){
-                let updatedPassword = !$passwordUpdated && await isPasswordUpdated(userUpdate)
-                Logger(['$$pwd updated: ', updatedPassword])
-                if(!updatedPassword){
-                    updateLocalUser(userUpdate)
-                    Logger(['$$pwd will show password updater'])
-                    Logger(['$$was auth checked? ', $authChecked])
-                    $authChecked && !$showPasswordUpdater && redirect('/update-password')
-                    Logger(['$$PSWU ', $showPasswordUpdater])
-                }
-                else{
-                    $authChecked && $showPasswordUpdater && showPasswordUpdater.set(false)
-                    processNewUserData(userUpdate)
-                }
-            }
-            else{
-                processNewUserData(userUpdate)
-            }
+            // if(userUpdate.id){
+            //     let updatedPassword = !$passwordUpdated && await isPasswordUpdated(userUpdate)
+            //     Logger(['$$pwd updated: ', updatedPassword])
+            //     if(!updatedPassword){
+            //         updateLocalUser(userUpdate)
+            //         Logger(['$$pwd will show password updater'])
+            //         Logger(['$$was auth checked? ', $authChecked])
+            //         $authChecked && !$showPasswordUpdater && redirect('/update-password')
+            //         Logger(['$$PSWU ', $showPasswordUpdater])
+            //     }
+            //     else{
+            //         $authChecked && $showPasswordUpdater && showPasswordUpdater.set(false)
+            //         processNewUserData(userUpdate)
+            //     }
+            // }
+            // else processNewUserData(userUpdate)
+
+            processNewUserData(userUpdate)
 
         })
 
