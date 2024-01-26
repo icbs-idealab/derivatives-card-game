@@ -245,7 +245,7 @@ export function getDefaultBotTrade(){
 }
 
 
-export const PROD_URL = 'https://icbscardgame.online'
+export const PROD_URL = process.env.VITE_SUPABASE_SIGNUP_URL as string
 export const DEV_URL = 'http://localhost:5173'
 export const APP_URL = getAppUrl()
 export const PASSWORD_UPDATE_PATH = 'update-password'
