@@ -1,4 +1,5 @@
 import type { AppGame, AppGamePlayer, AppGamePlayers, CardHand, PlayerRole, SupabaseUser, SuitName, SuitReveals, SuitRevealsBool, MessageParams, LobbyPlayerBasicInfo, Bots, BotParams, GamePhases, BotTradeData, ActionCount } from "./types";
+const PROD_URL = import.meta.env.VITE_SUPABASE_SIGNUP_URL as string;
 // import { makePlayers } from "$lib/state";
 
 export const defaultUser: SupabaseUser = {
@@ -244,8 +245,7 @@ export function getDefaultBotTrade(){
     } as BotTradeData
 }
 
-
-export const PROD_URL = process.env.VITE_SUPABASE_SIGNUP_URL as string
+// export const PROD_URL = process.env.VITE_SUPABASE_SIGNUP_URL as string
 export const DEV_URL = 'http://localhost:5173'
 export const APP_URL = getAppUrl()
 export const PASSWORD_UPDATE_PATH = 'update-password'
