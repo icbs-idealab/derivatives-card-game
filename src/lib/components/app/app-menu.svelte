@@ -6,8 +6,11 @@
         downloadGameData,
         getArchiveData,
         getArchives,
+        getArchivesForGameID,
+        getDummyTradesSB,
         // endGame,
         leaveGame,
+        postDummyTrades,
         setLoadingModal, 
         showMessage, 
         singOut 
@@ -23,6 +26,7 @@
     import { browser } from "$app/environment";
     import { get } from "svelte/store";
     import Icon from "../icon/icon.svelte";
+    import { nanoid } from "nanoid";
     // import { browser } $app.environment;
     const {saveAs} = fileSaver
 
@@ -135,8 +139,66 @@
                 caller: 'app-menu.svelte -> download()',
             })
         }
-
     }
+
+    async function getDummyTrades(gameID: string){
+        const {data, error} = await getDummyTradesSB(gameID)
+        console.log('trades: ', data)
+        console.log('error: ', error)
+    }
+
+    async function getTargetArchives(archiveID = "8OFNLriqVRJ2"){
+        console.log('getting target archives for: ', archiveID)
+        const {data, error} = await getArchivesForGameID(archiveID)
+        if(error){
+            console.log('error getting archive data: ', error)
+        }
+        else if(data){
+            let parsedArchs = parseArchives(data)
+            console.log('parsed archive data for target: ', parsedArchs)
+        }
+        else{
+            console.log('no data')
+        }
+    }
+
+    async function createDummyTrades(){
+        console.log('creating dummy trades');
+
+        let markets = ['clubs', 'diamonds', 'hearts', 'spades'];
+        let trades = [];
+        let dummyGameId = "DMY_" + nanoid();
+        // create 1500 dummy trades
+        for(let i = 0; i < 1500; i++){
+            console.log('creating dummy trade: ', i)
+            let action = Math.random() > 0.5 ? 'buy' : 'sell'
+            let market = markets[Math.floor(Math.random() * markets.length)]
+            trades.push({
+                game_id: dummyGameId,
+                market: market,
+                // random user between 1 and 4
+                actor: "user_" + (Math.floor(Math.random() * 4) + 1),
+                price: 30 + Math.floor(Math.random() * 100) + 1,
+                round: Math.floor( (i/ 100) + 1),
+                type: action,
+                created_at: new Date().toISOString()
+            })
+        }
+
+        console.log('trades: ', trades)
+        const result = await postDummyTrades(trades)
+        console.log('result of dummy trades: ', result)
+    }
+
+    // async function postDummyTrades(trades: any[]){
+    //     console.log('posting dummy trades: ', trades)
+    //     for(let i = 0; i < trades.length; i += 100){
+    //         let chunk = trades.slice(i, i + 100)
+    //         console.log('chunk: ', chunk)
+    //         // postTrades(chunk)
+    //         await supabase.from('game-trades').insert(chunk)
+    //     }
+    // }
 
     $:items = [
         {
@@ -171,8 +233,36 @@
         {
             label: 'Get Archives',
             icon: 'archive',
+            action: () => getArchives($currentUser.id),
+            condition: $currentUser.id
+        },
+        {
+            label: 'Get Target Archives',
+            icon: 'archive',
             // action: () => getArchives($currentUser.id),
-            action: () => showArchivesModal.set(true),
+            // action: () => showArchivesModal.set(true),
+            action: () => getTargetArchives(),
+            condition: $currentUser.id
+        },
+        {
+            label: 'Get Dummy Trades',
+            icon: 'archive',
+            // action: () => getArchives($currentUser.id),
+            // action: () => showArchivesModal.set(true),
+            action: () => {
+                let gameID = prompt('Enter Game ID');
+                if(gameID){
+                    getDummyTrades(gameID);
+                }
+            },
+            condition: $currentUser.id
+        },
+        {
+            label: 'Create Dummy Trades',
+            icon: 'archive',
+            // action: () => getArchives($currentUser.id),
+            // action: () => showArchivesModal.set(true),
+            action: () => createDummyTrades(),
             condition: $currentUser.id
         },
         // {

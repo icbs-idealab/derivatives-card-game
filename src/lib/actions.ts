@@ -828,13 +828,25 @@ export async function joinLobby(game_id: string, player: LobbyPlayerBasicInfo){
 
 // GAME
 
+export const getArchivesForGameID = async (game_id: string = '') => {
+    if(!game_id) return {data: [], error: {message: 'no user id or game id provided!'}};
+    
+    console.log("action 2")
+
+    return await supabase.from('archives')
+        .select()
+        .eq('game_id', game_id)
+}
+
 export const getArchives = async (user_id: string, game_id: string = '') => {
     if(!game_id && user_id){
+        console.log("action 1")
         return await supabase.from('archives')
         .select()
         .textSearch('participants', user_id)
     }
     else if(game_id && user_id){
+        console.log("action 2")
         return await supabase.from('archives')
         .select()
         .textSearch('game_id', game_id)
@@ -1311,6 +1323,40 @@ const publishTrade = async (trade: any) => {
         .from('game-trades')
         .insert(trade)
         .select('*')
+}
+
+export async function getDummyTradesSB(gameID: string){
+    if(!gameID) return {data: [], error: {message: 'no gameID'}}
+    ;
+    const {data, error} = await supabase.from('game-trades')
+    .select('*')
+    .eq('game_id', gameID)
+    .order('created_at', {ascending: true})
+    
+    return {data, error}
+}
+
+export async function postDummyTrades(trades: any[]){
+    let all: any[] = [];
+    for(let i = 0; i < trades.length; i += 100){
+        let chunk = trades.slice(i, i + 100)
+        console.log('chunk: ', chunk)
+        // postTrades(chunk)
+        const {data, error} = await supabase.from('game-trades')
+        .insert(chunk)
+        .select('*');
+
+        console.log('data: ', data)
+        console.log('error: ', error)
+        if(!error){
+            all.push(...data)
+        }
+        else {
+            Logger(['error posting dummy trades: ', error])
+        }
+    }
+
+    return all
 }
 
 export async function processTrade({market, type, value}: any){
